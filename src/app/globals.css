@@ -160,11 +160,42 @@ body {
 }
 
 /* Ambient glow */
-@keyframes ambient-pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.5; }
+/* Drifting orb animations */
+@keyframes drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+  33% { transform: translate(-3%, 5%) scale(1.05); opacity: 0.45; }
+  66% { transform: translate(2%, -3%) scale(0.97); opacity: 0.35; }
 }
 
-.ambient-glow {
-  animation: ambient-pulse 4s ease-in-out infinite;
+@keyframes drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.25; }
+  40% { transform: translate(4%, -4%) scale(1.03); opacity: 0.4; }
+  70% { transform: translate(-2%, 3%) scale(0.98); opacity: 0.3; }
+}
+
+@keyframes drift-3 {
+  0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 0.2; }
+  50% { transform: translate(-48%, 3%) scale(1.08); opacity: 0.35; }
+}
+
+.animate-drift-1 { animation: drift-1 20s ease-in-out infinite; }
+.animate-drift-2 { animation: drift-2 25s ease-in-out infinite; }
+.animate-drift-3 { animation: drift-3 30s ease-in-out infinite; }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    var(--color-elevated) 50%,
+    var(--color-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
 }

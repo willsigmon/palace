@@ -8,11 +8,23 @@ interface StreamHeaderProps {
   readonly stats: StatsResponse | null
 }
 
+const CATEGORY_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'family', label: 'Family', color: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
+  { value: 'work', label: 'Work', color: 'bg-blue-400/15 text-blue-400 border-blue-400/20' },
+  { value: 'music', label: 'Music', color: 'bg-purple-400/15 text-purple-400 border-purple-400/20' },
+  { value: 'technology', label: 'Tech', color: 'bg-cyan-400/15 text-cyan-400 border-cyan-400/20' },
+  { value: 'personal', label: 'Personal', color: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/20' },
+  { value: 'health', label: 'Health', color: 'bg-rose-400/15 text-rose-400 border-rose-400/20' },
+  { value: 'social', label: 'Social', color: 'bg-pink-400/15 text-pink-400 border-pink-400/20' },
+] as const
+
 export function StreamHeader({ stats }: StreamHeaderProps) {
-  const { openSearch } = useAppStore()
+  const { openSearch, filters, setFilter } = useAppStore()
+  const activeCategory = filters.category
 
   return (
-    <header className="mb-10">
+    <header className="mb-8">
       {/* Title + subtitle */}
       <div className="mb-5">
         <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-4xl)] italic text-text leading-tight">
@@ -23,7 +35,7 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
         </p>
       </div>
 
-      {/* Search bar — prominent */}
+      {/* Search bar */}
       <button
         onClick={openSearch}
         className="group flex w-full items-center gap-3 rounded-xl border border-border/40 bg-surface/30 px-5 py-3.5 text-sm text-muted transition-all duration-250 hover:border-accent/30 hover:bg-surface/50 hover:shadow-[0_0_20px_oklch(0.73_0.20_30_/_0.06)]"
@@ -39,15 +51,34 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
         </kbd>
       </button>
 
-      {/* Stats — small, underneath */}
-      {stats && (
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 px-1 text-[11px] text-muted/70 font-[family-name:var(--font-mono)]">
-          <span><strong className="text-sub font-medium">{formatNumber(stats.conversations)}</strong> conversations</span>
-          <span><strong className="text-sub font-medium">{formatNumber(stats.memories)}</strong> memories</span>
-          <span><strong className="text-sub font-medium">{formatNumber(stats.enrichment.people)}</strong> people</span>
-          <span><strong className="text-sub font-medium">{formatNumber(stats.enrichment.locations)}</strong> locations</span>
-        </div>
-      )}
+      {/* Filter pills */}
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {CATEGORY_FILTERS.map((f) => {
+          const isActive = activeCategory === (f.value || null)
+          return (
+            <button
+              key={f.value}
+              onClick={() => setFilter('category', f.value || null)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-200 ${
+                isActive
+                  ? f.value
+                    ? f.color
+                    : 'bg-accent/15 text-accent border-accent/20'
+                  : 'border-transparent text-muted/60 hover:text-muted hover:bg-surface/40'
+              }`}
+            >
+              {f.label}
+            </button>
+          )
+        })}
+
+        {/* Stats — inline after filters */}
+        {stats && (
+          <span className="ml-auto text-[10px] text-muted/40 font-[family-name:var(--font-mono)] hidden sm:inline">
+            {formatNumber(stats.conversations)} conversations
+          </span>
+        )}
+      </div>
     </header>
   )
 }

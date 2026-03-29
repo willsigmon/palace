@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ConversationListItem } from '@/types/api'
 import { getConversations } from '@/lib/api'
+import { useAppStore } from '@/stores/app-store'
 import { ConversationCard } from './conversation-card'
 import { ScrollReveal } from './scroll-reveal'
 import { parseTimestamp } from '@/lib/format'
@@ -18,6 +19,42 @@ export function StreamList({ initialConversations }: StreamListProps) {
   const [hasMore, setHasMore] = useState(initialConversations.length >= API_DEFAULTS.PAGE_SIZE)
   const [offset, setOffset] = useState(initialConversations.length)
   const observerRef = useRef<IntersectionObserver | null>(null)
+  const category = useAppStore((s) => s.filters.category)
+
+  // Re-fetch when category filter changes
+  useEffect(() => {
+    let cancelled = false
+
+    async function refetch() {
+      setLoading(true)
+      try {
+        const data = await getConversations({
+          category: category ?? undefined,
+          limit: API_DEFAULTS.PAGE_SIZE,
+        })
+        if (!cancelled) {
+          setConversations(data)
+          setOffset(data.length)
+          setHasMore(data.length >= API_DEFAULTS.PAGE_SIZE)
+        }
+      } catch {
+        // keep existing
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    // Only refetch if category changed from initial (null = show initial data)
+    if (category !== null) {
+      refetch()
+    } else {
+      setConversations(initialConversations)
+      setOffset(initialConversations.length)
+      setHasMore(initialConversations.length >= API_DEFAULTS.PAGE_SIZE)
+    }
+
+    return () => { cancelled = true }
+  }, [category, initialConversations])
 
   const lastCardRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -42,6 +79,7 @@ export function StreamList({ initialConversations }: StreamListProps) {
 
     try {
       const newConversations = await getConversations({
+        category: category ?? undefined,
         limit: API_DEFAULTS.PAGE_SIZE,
         offset,
       })
