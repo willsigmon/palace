@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 import type { ConversationListItem } from '@/types/api'
 import { getConversations } from '@/lib/api'
 import { ConversationCard } from './conversation-card'
+import { ScrollReveal } from './scroll-reveal'
 import { parseTimestamp } from '@/lib/format'
 import { API_DEFAULTS } from '@/lib/constants'
 
@@ -86,10 +87,12 @@ export function StreamList({ initialConversations }: StreamListProps) {
                     key={conversation.id}
                     ref={isLast ? lastCardRef : undefined}
                   >
-                    <ConversationCard
-                      conversation={conversation}
-                      index={i}
-                    />
+                    <ScrollReveal delay={i * 0.06}>
+                      <ConversationCard
+                        conversation={conversation}
+                        index={i}
+                      />
+                    </ScrollReveal>
                   </div>
                 )
               })}
