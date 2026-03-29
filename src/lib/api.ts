@@ -149,6 +149,19 @@ export interface PersonDetailResponse {
   }[]
 }
 
+// === Timeline ===
+
+export async function getTimeline(date: string) {
+  const data = await request<{ date: string; events: readonly TimelineEvent[] }>('/api/timeline', { date })
+  return data.events
+}
+
+interface TimelineEvent {
+  readonly time: string
+  readonly type: string
+  readonly data: Record<string, unknown>
+}
+
 // === Knowledge Graph ===
 
 export function getGraph(params?: GraphParams) {

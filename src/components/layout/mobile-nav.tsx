@@ -10,6 +10,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M3 4h14M3 8h10M3 12h14M3 16h8" strokeLinecap="round" />
     </svg>
   ),
+  memories: (
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M4 4h12M4 8h8M4 12h10M4 16h6" />
+      <circle cx="16" cy="12" r="2" fill="currentColor" opacity="0.3" />
+    </svg>
+  ),
   search: (
     <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
       <circle cx="9" cy="9" r="5" />

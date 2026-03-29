@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import type { ConversationListItem } from '@/types/api'
 import { getConversations } from '@/lib/api'
 import { useAppStore } from '@/stores/app-store'
@@ -102,23 +103,26 @@ export function StreamList({ initialConversations }: StreamListProps) {
       <div className="absolute left-[11px] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent md:left-[15px]" />
 
       <div className="space-y-6">
-        {grouped.map(([date, items], groupIdx) => (
-          <section key={date}>
-            {/* Date header — sticky with backdrop blur */}
+        {grouped.map(([dateLabel, isoDate, items], groupIdx) => (
+          <section key={dateLabel}>
+            {/* Date header — links to day view */}
             <div className="sticky top-0 z-20 mb-3 flex items-center gap-3 py-2 backdrop-blur-sm">
               <div className="relative z-10 flex h-2.5 w-2.5 items-center justify-center rounded-full ring-[3px] ring-void md:ml-[10px]">
                 <div className="h-2.5 w-2.5 rounded-full bg-accent" />
               </div>
-              <h2 className="font-[family-name:var(--font-serif)] text-base italic text-text/70">
-                {date}
-              </h2>
+              <Link
+                href={`/day/${isoDate}`}
+                className="font-[family-name:var(--font-serif)] text-base italic text-text/70 transition-colors hover:text-accent"
+              >
+                {dateLabel}
+              </Link>
               <div className="h-px flex-1 bg-gradient-to-r from-border/30 to-transparent" />
             </div>
 
             {/* Conversation cards */}
             <div className="ml-7 space-y-2 md:ml-10">
               {items.map((conversation, i) => {
-                const isLast = date === grouped[grouped.length - 1]?.[0]
+                const isLast = dateLabel === grouped[grouped.length - 1]?.[0]
                   && i === items.length - 1
                 // Only stagger the first group's first few cards
                 const staggerDelay = groupIdx === 0 && i < 6 ? i * 0.04 : 0
@@ -162,8 +166,9 @@ export function StreamList({ initialConversations }: StreamListProps) {
   )
 }
 
-function groupByDate(conversations: readonly ConversationListItem[]): readonly [string, readonly ConversationListItem[]][] {
-  const groups = new Map<string, ConversationListItem[]>()
+function groupByDate(conversations: readonly ConversationListItem[]): readonly [string, string, readonly ConversationListItem[]][] {
+  // Returns [label, isoDate, conversations][]
+  const groups = new Map<string, { isoDate: string; items: ConversationListItem[] }>()
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
@@ -186,15 +191,16 @@ function groupByDate(conversations: readonly ConversationListItem[]): readonly [
       })
     }
 
+    const isoDate = date.toISOString().slice(0, 10)
     const existing = groups.get(label)
     if (existing) {
-      existing.push(c)
+      existing.items.push(c)
     } else {
-      groups.set(label, [c])
+      groups.set(label, { isoDate, items: [c] })
     }
   }
 
-  return Array.from(groups.entries())
+  return Array.from(groups.entries()).map(([label, { isoDate, items }]) => [label, isoDate, items] as const)
 }
 
 function isSameDay(a: Date, b: Date): boolean {

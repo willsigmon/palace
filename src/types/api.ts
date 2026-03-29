@@ -84,8 +84,12 @@ export interface Memory {
   readonly id: number
   readonly content: string
   readonly category: string | null
+  readonly tagsJson: string | null
+  readonly confidence: number | null
   readonly sourceApp: string | null
+  readonly headline: string | null
   readonly createdAt: string
+  readonly source: string | null
 }
 
 // === Search (GET /api/search?query=) ===
