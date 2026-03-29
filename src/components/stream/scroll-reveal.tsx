@@ -10,8 +10,7 @@ interface ScrollRevealProps {
 
 /**
  * CSS + IntersectionObserver scroll reveal.
- * Simpler and more reliable than GSAP ScrollTrigger for this use case.
- * GSAP is reserved for complex timeline animations (graph, transitions).
+ * Cards fade up as they enter the viewport.
  */
 export function ScrollReveal({ children, delay = 0, className = '' }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null)
@@ -27,6 +26,14 @@ export function ScrollReveal({ children, delay = 0, className = '' }: ScrollReve
       return
     }
 
+    // Check if already in viewport on mount — reveal immediately with stagger
+    const rect = el.getBoundingClientRect()
+    if (rect.top < window.innerHeight) {
+      const timer = setTimeout(() => setVisible(true), delay * 1000)
+      return () => clearTimeout(timer)
+    }
+
+    // Below viewport — use intersection observer
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
@@ -34,11 +41,12 @@ export function ScrollReveal({ children, delay = 0, className = '' }: ScrollReve
           observer.disconnect()
         }
       },
-      { threshold: 0.05, rootMargin: '0px 0px 50px 0px' },
+      { threshold: 0.02 },
     )
 
     observer.observe(el)
     return () => observer.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -47,8 +55,10 @@ export function ScrollReveal({ children, delay = 0, className = '' }: ScrollReve
       className={className}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(16px)',
-        transition: `opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+        transform: visible ? 'translateY(0)' : 'translateY(12px)',
+        transition: visible
+          ? 'opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+          : 'none',
       }}
     >
       {children}

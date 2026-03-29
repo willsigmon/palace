@@ -12,32 +12,42 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
   const { openSearch } = useAppStore()
 
   return (
-    <header className="mb-8">
-      <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text">
-        The Stream
-      </h1>
+    <header className="mb-10">
+      {/* Title + subtitle */}
+      <div className="mb-5">
+        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-4xl)] italic text-text leading-tight">
+          The Stream
+        </h1>
+        <p className="mt-1.5 text-sm text-sub">
+          Your conversations, searchable and connected.
+        </p>
+      </div>
 
-      {stats && (
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted font-[family-name:var(--font-mono)]">
-          <span>{formatNumber(stats.conversations)} conversations</span>
-          <span>{formatNumber(stats.memories)} memories</span>
-          <span>{formatNumber(stats.enrichment.people)} people</span>
-        </div>
-      )}
-
+      {/* Search bar — prominent */}
       <button
         onClick={openSearch}
-        className="mt-4 flex w-full items-center gap-3 rounded-lg border border-border/50 bg-surface/40 px-4 py-2.5 text-sm text-muted transition-colors duration-200 hover:border-border hover:bg-surface"
+        className="group flex w-full items-center gap-3 rounded-xl border border-border/40 bg-surface/30 px-5 py-3.5 text-sm text-muted transition-all duration-250 hover:border-accent/30 hover:bg-surface/50 hover:shadow-[0_0_20px_oklch(0.73_0.20_30_/_0.06)]"
       >
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted group-hover:text-accent transition-colors">
           <circle cx="9" cy="9" r="5" />
           <path d="M13 13l4 4" strokeLinecap="round" />
         </svg>
-        <span>Search your memories...</span>
-        <kbd className="ml-auto hidden rounded border border-border px-1.5 py-0.5 text-[10px] sm:inline">
+        <span className="group-hover:text-sub transition-colors">Search your memories...</span>
+        <span className="flex-1" />
+        <kbd className="hidden rounded-md border border-border/60 bg-elevated/40 px-2 py-0.5 text-[10px] text-muted sm:inline">
           <span className="text-[9px]">&#8984;</span>K
         </kbd>
       </button>
+
+      {/* Stats — small, underneath */}
+      {stats && (
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 px-1 text-[11px] text-muted/70 font-[family-name:var(--font-mono)]">
+          <span><strong className="text-sub font-medium">{formatNumber(stats.conversations)}</strong> conversations</span>
+          <span><strong className="text-sub font-medium">{formatNumber(stats.memories)}</strong> memories</span>
+          <span><strong className="text-sub font-medium">{formatNumber(stats.enrichment.people)}</strong> people</span>
+          <span><strong className="text-sub font-medium">{formatNumber(stats.enrichment.locations)}</strong> locations</span>
+        </div>
+      )}
     </header>
   )
 }

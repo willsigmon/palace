@@ -60,34 +60,37 @@ export function StreamList({ initialConversations }: StreamListProps) {
 
   return (
     <div className="relative">
-      {/* Timeline thread */}
-      <div className="timeline-thread absolute left-6 top-0 bottom-0 w-px md:left-8" />
+      {/* Timeline thread — subtle vertical line */}
+      <div className="absolute left-[11px] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent md:left-[15px]" />
 
-      <div className="space-y-8">
-        {grouped.map(([date, items]) => (
+      <div className="space-y-6">
+        {grouped.map(([date, items], groupIdx) => (
           <section key={date}>
-            {/* Date header */}
-            <div className="sticky top-0 z-10 mb-4 flex items-center gap-3 pb-2">
-              <div className="relative z-10 flex h-3 w-3 items-center justify-center rounded-full bg-accent/20 ring-4 ring-void md:ml-[26px]">
-                <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+            {/* Date header — sticky with backdrop blur */}
+            <div className="sticky top-0 z-20 mb-3 flex items-center gap-3 py-2 backdrop-blur-sm">
+              <div className="relative z-10 flex h-2.5 w-2.5 items-center justify-center rounded-full ring-[3px] ring-void md:ml-[10px]">
+                <div className="h-2.5 w-2.5 rounded-full bg-accent" />
               </div>
-              <h2 className="font-[family-name:var(--font-serif)] text-lg italic text-sub">
+              <h2 className="font-[family-name:var(--font-serif)] text-base italic text-text/70">
                 {date}
               </h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-border/30 to-transparent" />
             </div>
 
             {/* Conversation cards */}
-            <div className="ml-10 space-y-3 md:ml-16">
+            <div className="ml-7 space-y-2 md:ml-10">
               {items.map((conversation, i) => {
                 const isLast = date === grouped[grouped.length - 1]?.[0]
                   && i === items.length - 1
+                // Only stagger the first group's first few cards
+                const staggerDelay = groupIdx === 0 && i < 6 ? i * 0.04 : 0
 
                 return (
                   <div
                     key={conversation.id}
                     ref={isLast ? lastCardRef : undefined}
                   >
-                    <ScrollReveal delay={i < 5 ? i * 0.05 : 0}>
+                    <ScrollReveal delay={staggerDelay}>
                       <ConversationCard
                         conversation={conversation}
                         index={i}

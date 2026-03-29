@@ -65,7 +65,7 @@ export default function RootLayout({
         <SearchOverlay />
 
         {/* Main content — offset for sidebar on desktop */}
-        <main className="min-h-screen pb-20 md:pl-16 md:pb-0">
+        <main className="min-h-screen pb-20 md:pl-14 md:pb-0">
           {children}
         </main>
 
