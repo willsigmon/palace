@@ -68,9 +68,12 @@ export interface Person {
   readonly name: string
   readonly display_name: string | null
   readonly relationship: string | null
+  readonly relationship_detail: string | null
   readonly phone: string | null
   readonly email: string | null
   readonly birthday: string | null
+  readonly clay_contact_id: number | null
+  readonly gedcom_id: string | null
   readonly conversation_count?: number
   readonly last_seen?: string | null
 }

@@ -117,7 +117,36 @@ export function getPeople(params?: PeopleListParams) {
 }
 
 export function getPerson(id: string | number) {
-  return request<Person>(`/api/people/${id}`)
+  return request<PersonDetailResponse>(`/api/people/${id}`)
+}
+
+// Person detail has a different shape than the list
+export interface PersonDetailResponse {
+  readonly person: {
+    readonly id: number
+    readonly name: string
+    readonly display_name: string | null
+    readonly relationship: string | null
+    readonly relationship_detail: string | null
+    readonly clay_contact_id: number | null
+    readonly gedcom_id: string | null
+    readonly phone: string | null
+    readonly email: string | null
+    readonly birthday: string | null
+    readonly notes: string | null
+    readonly created_at: string
+  }
+  readonly conversations: readonly {
+    readonly id: number
+    readonly title: string | null
+    readonly startedAt: string
+    readonly category: string | null
+  }[]
+  readonly relationships: readonly {
+    readonly label: string
+    readonly target: string
+    readonly node_type: string
+  }[]
 }
 
 // === Knowledge Graph ===

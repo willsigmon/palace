@@ -5,6 +5,7 @@
 // Navigation items
 export const NAV_ITEMS = [
   { id: 'stream', label: 'Stream', href: '/', icon: 'stream' },
+  { id: 'people', label: 'People', href: '/people', icon: 'people' },
   { id: 'search', label: 'Search', href: '/search', icon: 'search' },
   { id: 'graph', label: 'Graph', href: '/graph', icon: 'graph' },
   { id: 'insights', label: 'Insights', href: '/insights', icon: 'insights' },
