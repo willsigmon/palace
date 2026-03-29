@@ -191,4 +191,79 @@ export function getMemories(params?: {
   })
 }
 
+// === Patterns ===
+
+export function getPatterns(since?: string) {
+  return request<PatternsResponse>('/api/patterns', {
+    since: since ?? new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0],
+  })
+}
+
+export interface PatternsResponse {
+  readonly categoryTrends: readonly { week: string; category: string; count: number }[]
+  readonly topPeople: readonly { name: string; relationship: string; conversation_count: number; last_seen: string }[]
+  readonly recurringTopics: readonly { category: string; count: number; first_seen: string; last_seen: string }[]
+  readonly hourlyEnergy: readonly { hour: number; count: number }[]
+  readonly dailyFrequency: readonly { date: string; count: number }[]
+}
+
+// === On This Day ===
+
+export function getOnThisDay() {
+  return request<OnThisDayResponse>('/api/on-this-day')
+}
+
+export interface OnThisDayResponse {
+  readonly date: string
+  readonly memories: readonly {
+    period: string
+    conversations: readonly { id: number; title: string | null; overview: string | null; category: string | null; emoji: string | null; startedAt: string }[]
+    memoryCount: number
+  }[]
+}
+
+// === Serendipity ===
+
+export function getSerendipity() {
+  return request<SerendipityResponse>('/api/serendipity')
+}
+
+export interface SerendipityResponse {
+  readonly connections: readonly {
+    type: string
+    description: string
+    conversations: readonly { id: number; title: string | null; startedAt: string; category: string | null }[]
+  }[]
+}
+
+// === Weekly Digest ===
+
+export function getDigest() {
+  return request<DigestResponse>('/api/digest')
+}
+
+export interface DigestResponse {
+  readonly week_starting: string
+  readonly conversationCount: number
+  readonly memoryCount: number
+  readonly topCategories: readonly { category: string; count: number }[]
+  readonly topPeople?: readonly { name: string; count: number }[]
+  readonly longestConversation: { id: number; title: string | null; startedAt: string; duration_seconds: number } | null
+  readonly highlights: readonly { id: number; title: string; overview: string; category: string; startedAt: string }[]
+}
+
+// === Perplexity Enrich ===
+
+export function getEnrichment(query: string, type: 'person' | 'place' | 'thing' | 'general' = 'general') {
+  return request<EnrichmentResponse>('/api/enrich', { query, type })
+}
+
+export interface EnrichmentResponse {
+  readonly query: string
+  readonly type: string
+  readonly content: string
+  readonly cached: boolean
+  readonly cached_at?: string
+}
+
 export { ApiError }

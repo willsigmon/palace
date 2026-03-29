@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatRelativeTime } from '@/lib/format'
 import type { PersonDetailResponse } from '@/lib/api'
+import { getEnrichment } from '@/lib/api'
 
 interface PersonProfileProps {
   readonly data: PersonDetailResponse
@@ -34,6 +36,20 @@ function getInitials(name: string): string {
 export function PersonProfile({ data }: PersonProfileProps) {
   const { person, conversations, relationships } = data
   const name = person.display_name ?? person.name
+  const [enrichment, setEnrichment] = useState<string | null>(null)
+  const [enrichLoading, setEnrichLoading] = useState(false)
+
+  const lookUp = useCallback(async () => {
+    setEnrichLoading(true)
+    try {
+      const result = await getEnrichment(name, 'person')
+      setEnrichment(result.content)
+    } catch {
+      setEnrichment('Could not look up this person.')
+    } finally {
+      setEnrichLoading(false)
+    }
+  }, [name])
 
   // Group relationships by type
   const groupedRelationships = new Map<string, string[]>()
@@ -104,6 +120,39 @@ export function PersonProfile({ data }: PersonProfileProps) {
         )}
         {person.notes && (
           <InfoCard label="Notes" value={person.notes} />
+        )}
+      </div>
+
+      {/* Perplexity Enrichment */}
+      <div className="mb-8">
+        {enrichment ? (
+          <div className="rounded-xl border border-serendipity/15 bg-serendipity/[0.02] p-5">
+            <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-serendipity/70">
+              About {name}
+            </h2>
+            <div className="text-[13px] leading-[1.7] text-sub/80 whitespace-pre-wrap">{enrichment}</div>
+          </div>
+        ) : (
+          <button
+            onClick={lookUp}
+            disabled={enrichLoading}
+            className="flex items-center gap-2 rounded-lg bg-serendipity/10 px-4 py-2 text-[12px] font-medium text-serendipity transition-colors hover:bg-serendipity/20 disabled:opacity-50"
+          >
+            {enrichLoading ? (
+              <>
+                <div className="h-3 w-3 animate-spin rounded-full border border-serendipity/30 border-t-serendipity" />
+                Looking up...
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <circle cx="9" cy="9" r="5" />
+                  <path d="M13 13l4 4" />
+                </svg>
+                Look up with Perplexity
+              </>
+            )}
+          </button>
         )}
       </div>
 
