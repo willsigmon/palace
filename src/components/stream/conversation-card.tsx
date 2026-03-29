@@ -1,37 +1,32 @@
 'use client'
 
 import Link from 'next/link'
-import type { Conversation } from '@/types/api'
-import { formatRelativeTime, formatTime, formatDuration, truncate } from '@/lib/format'
-import { SESSION_TYPE_LABELS } from '@/lib/constants'
+import type { ConversationListItem } from '@/types/api'
+import { formatRelativeTime, formatTime, formatDuration, calcDuration, truncate } from '@/lib/format'
 
 interface ConversationCardProps {
-  readonly conversation: Conversation
+  readonly conversation: ConversationListItem
   readonly index: number
 }
 
-const SESSION_TYPE_COLORS: Record<string, string> = {
-  conversation: 'bg-conversation/15 text-conversation',
-  media: 'bg-media/15 text-media',
-  ambient: 'bg-ambient/15 text-ambient',
-  voice_note: 'bg-voice-note/15 text-voice-note',
-}
-
 export function ConversationCard({ conversation, index }: ConversationCardProps) {
-  const title = conversation.enrichment?.generated_title
-    ?? conversation.title
-    ?? 'Untitled Conversation'
+  const title = conversation.title ?? 'Untitled Conversation'
+  const overview = conversation.overview ?? ''
+  const duration = calcDuration(conversation.startedAt, conversation.finishedAt)
 
-  const overview = conversation.enrichment?.generated_overview
-    ?? conversation.overview
-    ?? ''
-
-  const sessionType = conversation.enrichment?.session_type
-    ?? conversation.session_type
-
-  const people = conversation.enrichment?.people_mentioned
-    ?? conversation.people_mentioned
-    ?? []
+  // Parse people_mentioned — API returns it as JSON string or null
+  const people: readonly string[] = (() => {
+    if (!conversation.people_mentioned) return []
+    if (typeof conversation.people_mentioned === 'string') {
+      try {
+        const parsed = JSON.parse(conversation.people_mentioned)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return []
+  })()
 
   return (
     <Link
@@ -41,28 +36,30 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
         animationDelay: `${index * 80}ms`,
       }}
     >
-      {/* Top row: time + type badge */}
+      {/* Top row: time + category badge */}
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
+          {conversation.emoji && (
+            <span className="text-base">{conversation.emoji}</span>
+          )}
           <time
             className="text-xs text-muted font-[family-name:var(--font-mono)]"
-            dateTime={conversation.created_at}
-            title={new Date(conversation.created_at).toLocaleString()}
+            dateTime={conversation.startedAt}
           >
-            {formatTime(conversation.created_at)}
+            {formatTime(conversation.startedAt)}
           </time>
-          {conversation.duration_seconds && (
+          {duration && (
             <span className="text-xs text-muted">
-              {formatDuration(conversation.duration_seconds)}
+              {formatDuration(duration)}
             </span>
           )}
         </div>
 
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${SESSION_TYPE_COLORS[sessionType] ?? 'bg-elevated text-sub'}`}
-        >
-          {SESSION_TYPE_LABELS[sessionType] ?? sessionType}
-        </span>
+        {conversation.category && (
+          <span className="rounded-full bg-elevated px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sub">
+            {conversation.category}
+          </span>
+        )}
       </div>
 
       {/* Title */}
@@ -77,9 +74,8 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
         </p>
       )}
 
-      {/* Bottom row: people + topics */}
+      {/* Bottom row: people + relative time */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* People badges */}
         {people.slice(0, 3).map((person) => (
           <span
             key={person}
@@ -93,12 +89,16 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
           <span className="text-xs text-muted">+{people.length - 3}</span>
         )}
 
-        {/* Spacer */}
         <span className="flex-1" />
 
-        {/* Relative time */}
-        <time className="text-xs text-muted" dateTime={conversation.created_at}>
-          {formatRelativeTime(conversation.created_at)}
+        {conversation.segmentCount > 0 && (
+          <span className="text-[10px] text-muted font-[family-name:var(--font-mono)]">
+            {conversation.segmentCount} segments
+          </span>
+        )}
+
+        <time className="text-xs text-muted" dateTime={conversation.startedAt}>
+          {formatRelativeTime(conversation.startedAt)}
         </time>
       </div>
     </Link>

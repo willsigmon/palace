@@ -1,27 +1,45 @@
 /**
  * Type definitions for the wsigomi REST API (api.wsig.me)
- * Maps to enrichment.db + omi.db schema
+ * Verified against live API responses 2026-03-29
  */
 
-// === Core Entities ===
+// === Conversation List Item (GET /api/conversations) ===
 
-export interface Conversation {
-  readonly id: string
-  readonly title: string
+export interface ConversationListItem {
+  readonly id: number
+  readonly title: string | null
   readonly overview: string | null
-  readonly category: string | null
-  readonly session_type: 'conversation' | 'media' | 'ambient' | 'voice_note'
   readonly emoji: string | null
-  readonly created_at: string
-  readonly finished_at: string | null
-  readonly duration_seconds: number | null
+  readonly category: string | null
+  readonly startedAt: string // "2026-03-28 22:48:09.566"
+  readonly finishedAt: string | null
+  readonly session_type: string | null
+  readonly people_mentioned: string | null // JSON string or null
+  readonly segmentCount: number
+}
+
+// === Conversation Detail (GET /api/conversations/:id) ===
+
+export interface ConversationDetail {
+  readonly session: ConversationSession
+  readonly speakerNames: Record<string, string>
+  readonly segments: readonly TranscriptSegment[]
+  readonly enrichment?: ConversationEnrichment | null
+}
+
+export interface ConversationSession {
+  readonly id: number
+  readonly startedAt: string
+  readonly finishedAt: string | null
   readonly source: string
-  readonly starred: boolean
-  readonly people_mentioned: readonly string[]
-  readonly topics: readonly string[]
-  readonly quality_score: number | null
-  readonly transcript_segments: readonly TranscriptSegment[]
-  readonly enrichment: ConversationEnrichment | null
+  readonly language: string | null
+  readonly status: string
+  readonly title: string | null
+  readonly overview: string | null
+  readonly emoji: string | null
+  readonly category: string | null
+  readonly starred: number
+  readonly discarded: number
 }
 
 export interface ConversationEnrichment {
@@ -29,103 +47,129 @@ export interface ConversationEnrichment {
   readonly generated_overview: string | null
   readonly category: string | null
   readonly session_type: string | null
-  readonly people_mentioned: readonly string[]
+  readonly people_mentioned: readonly string[] | null
   readonly quality_score: number | null
 }
 
 export interface TranscriptSegment {
+  readonly speaker: number
+  readonly speakerLabel: string
+  readonly isUser: number // 0 or 1
   readonly text: string
-  readonly speaker: string
-  readonly speaker_label: string | null
-  readonly is_user: boolean
-  readonly start_time: number
-  readonly end_time: number
+  readonly startTime: number
+  readonly endTime: number
+  readonly speakerName: string | null
 }
 
+// === People ===
+
 export interface Person {
-  readonly id: string
+  readonly id: number
   readonly name: string
   readonly display_name: string | null
   readonly relationship: string | null
   readonly phone: string | null
   readonly email: string | null
   readonly birthday: string | null
-  readonly conversation_count: number
-  readonly last_seen: string | null
+  readonly conversation_count?: number
+  readonly last_seen?: string | null
 }
+
+// === Memories ===
 
 export interface Memory {
-  readonly id: string
+  readonly id: number
   readonly content: string
   readonly category: string | null
-  readonly tags: readonly string[]
-  readonly confidence: number | null
-  readonly source_app: string | null
-  readonly created_at: string
+  readonly sourceApp: string | null
+  readonly createdAt: string
 }
 
-export interface ActionItem {
-  readonly id: string
-  readonly description: string
-  readonly completed: boolean
-  readonly priority: string | null
+// === Search (GET /api/search?query=) ===
+
+export interface SearchResponse {
+  readonly memories: readonly SearchMemory[]
+  readonly conversations: readonly SearchConversation[]
+  readonly actionItems: readonly SearchActionItem[]
+  readonly people: readonly SearchPerson[]
+  readonly limitless: readonly SearchLimitless[]
+}
+
+export interface SearchMemory {
+  readonly id: number
+  readonly content: string
   readonly category: string | null
-  readonly due_at: string | null
-  readonly created_at: string
+  readonly sourceApp: string | null
+  readonly createdAt: string
 }
 
-export interface KnowledgeGraphNode {
-  readonly id: string
+export interface SearchConversation {
+  readonly id: number
+  readonly title: string | null
+  readonly overview: string | null
+  readonly category: string | null
+  readonly startedAt: string
+}
+
+export interface SearchActionItem {
+  readonly id: number
+  readonly description: string
+  readonly completed: number
+  readonly createdAt: string
+}
+
+export interface SearchPerson {
+  readonly id: number
   readonly name: string
-  readonly type: 'person' | 'organization' | 'project' | 'tool' | 'location'
-  readonly properties: Record<string, unknown>
+  readonly display_name: string | null
+  readonly relationship: string | null
 }
 
-export interface KnowledgeGraphEdge {
-  readonly source: string
-  readonly target: string
-  readonly relationship: string
-  readonly weight: number
+export interface SearchLimitless {
+  readonly id: number
+  readonly title: string | null
+  readonly markdown: string | null
+  readonly startDate: string
 }
 
-export interface Location {
-  readonly id: string
-  readonly latitude: number
-  readonly longitude: number
-  readonly address: string | null
-  readonly label: string | null
-  readonly people_present: readonly string[]
-  readonly created_at: string
-}
-
-export interface TimelineEvent {
-  readonly type: 'conversation' | 'memory' | 'action_item' | 'location'
-  readonly timestamp: string
-  readonly data: Conversation | Memory | ActionItem | Location
-}
-
-// === API Responses ===
+// === Stats (GET /api/stats) ===
 
 export interface StatsResponse {
   readonly memories: number
   readonly conversations: number
-  readonly action_items: number
+  readonly actionItems: number
   readonly observations: number
   readonly screenshots: number
-  readonly people: number
-  readonly kg_nodes: number
-  readonly locations: number
-  readonly limitless_lifelogs: number
+  readonly enrichment: {
+    readonly people: number
+    readonly kgNodes: number
+    readonly locations: number
+    readonly limitless: number
+  }
 }
 
-export interface SearchResult {
-  readonly type: 'memory' | 'conversation' | 'action_item' | 'person' | 'limitless'
-  readonly id: string
-  readonly title: string
-  readonly excerpt: string
-  readonly created_at: string
-  readonly score: number
+// === Knowledge Graph (GET /api/graph) ===
+
+export interface KnowledgeGraphNode {
+  readonly id: number
+  readonly name: string
+  readonly type: string
+  readonly properties: Record<string, unknown>
 }
+
+export interface KnowledgeGraphEdge {
+  readonly source: number
+  readonly target: number
+  readonly relationship: string
+  readonly weight?: number
+}
+
+export interface GraphResponse {
+  readonly nodes: readonly KnowledgeGraphNode[]
+  readonly edges: readonly KnowledgeGraphEdge[]
+}
+
+// === Health ===
 
 export interface HealthResponse {
   readonly ok: boolean
@@ -133,7 +177,7 @@ export interface HealthResponse {
   readonly enrichment: boolean
 }
 
-// === API Query Parameters ===
+// === Query Parameters ===
 
 export interface ConversationListParams {
   readonly query?: string
@@ -163,13 +207,4 @@ export interface GraphParams {
   readonly query?: string
   readonly related_to?: string
   readonly limit?: number
-}
-
-// === Paginated Response ===
-
-export interface PaginatedResponse<T> {
-  readonly data: readonly T[]
-  readonly total: number
-  readonly limit: number
-  readonly offset: number
 }

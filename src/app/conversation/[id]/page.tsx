@@ -10,8 +10,8 @@ interface ConversationPageProps {
 export async function generateMetadata({ params }: ConversationPageProps): Promise<Metadata> {
   const { id } = await params
   try {
-    const conversation = await getConversation(id)
-    const title = conversation.enrichment?.generated_title ?? conversation.title ?? 'Conversation'
+    const detail = await getConversation(id)
+    const title = detail.session.title ?? 'Conversation'
     return { title }
   } catch {
     return { title: 'Conversation' }
@@ -21,16 +21,16 @@ export async function generateMetadata({ params }: ConversationPageProps): Promi
 export default async function ConversationPage({ params }: ConversationPageProps) {
   const { id } = await params
 
-  let conversation
+  let detail
   try {
-    conversation = await getConversation(id)
+    detail = await getConversation(id)
   } catch {
     notFound()
   }
 
   return (
     <div className="mx-auto max-w-3xl px-[var(--space-page)] py-8">
-      <ConversationDetail conversation={conversation} />
+      <ConversationDetail detail={detail} />
     </div>
   )
 }

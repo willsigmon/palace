@@ -1,25 +1,32 @@
 'use client'
 
 import Link from 'next/link'
-import type { Conversation } from '@/types/api'
-import { formatDate, formatTime, formatDuration } from '@/lib/format'
-import { SESSION_TYPE_LABELS } from '@/lib/constants'
+import type { ConversationDetail as ConversationDetailType } from '@/types/api'
+import { formatDate, formatTime, formatDuration, calcDuration } from '@/lib/format'
 
 interface ConversationDetailProps {
-  readonly conversation: Conversation
+  readonly detail: ConversationDetailType
 }
 
-export function ConversationDetail({ conversation }: ConversationDetailProps) {
-  const title = conversation.enrichment?.generated_title
-    ?? conversation.title
-    ?? 'Untitled Conversation'
+export function ConversationDetail({ detail }: ConversationDetailProps) {
+  const { session, segments, speakerNames } = detail
+  const title = session.title ?? 'Untitled Conversation'
+  const duration = calcDuration(session.startedAt, session.finishedAt)
 
-  const overview = conversation.enrichment?.generated_overview
-    ?? conversation.overview
+  // Build speaker color map
+  const speakerColors = ['text-accent', 'text-serendipity', 'text-pattern', 'text-memory', 'text-conversation', 'text-voice-note']
 
-  const people = conversation.enrichment?.people_mentioned
-    ?? conversation.people_mentioned
-    ?? []
+  function getSpeakerName(segment: (typeof segments)[number]): string {
+    if (segment.speakerName) return segment.speakerName
+    if (speakerNames[String(segment.speaker)]) return speakerNames[String(segment.speaker)]
+    if (segment.isUser) return 'You'
+    return segment.speakerLabel ?? `Speaker ${segment.speaker}`
+  }
+
+  function getSpeakerColor(speaker: number, isUser: boolean): string {
+    if (isUser) return 'text-accent'
+    return speakerColors[speaker % speakerColors.length] ?? 'text-sub'
+  }
 
   return (
     <article>
@@ -36,75 +43,66 @@ export function ConversationDetail({ conversation }: ConversationDetailProps) {
 
       {/* Header */}
       <header className="mb-8">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-2xl)] italic text-text">
-          {title}
-        </h1>
-
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted font-[family-name:var(--font-mono)]">
-          <time dateTime={conversation.created_at}>
-            {formatDate(conversation.created_at)} at {formatTime(conversation.created_at)}
-          </time>
-          {conversation.duration_seconds && (
-            <span>{formatDuration(conversation.duration_seconds)}</span>
+        <div className="flex items-start gap-3">
+          {session.emoji && (
+            <span className="text-3xl">{session.emoji}</span>
           )}
-          <span className="rounded-full bg-elevated px-2 py-0.5">
-            {SESSION_TYPE_LABELS[conversation.session_type] ?? conversation.session_type}
-          </span>
+          <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-2xl)] italic text-text">
+            {title}
+          </h1>
         </div>
 
-        {/* People */}
-        {people.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {people.map((person) => (
-              <span
-                key={person}
-                className="inline-flex items-center gap-1.5 rounded-full bg-surface border border-border px-3 py-1 text-xs text-sub"
-              >
-                <span className="h-2 w-2 rounded-full bg-accent-from" />
-                {person}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted font-[family-name:var(--font-mono)]">
+          <time dateTime={session.startedAt}>
+            {formatDate(session.startedAt)} at {formatTime(session.startedAt)}
+          </time>
+          {duration && <span>{formatDuration(duration)}</span>}
+          {session.category && (
+            <span className="rounded-full bg-elevated px-2 py-0.5">
+              {session.category}
+            </span>
+          )}
+          <span className="rounded-full bg-elevated px-2 py-0.5">
+            {session.source}
+          </span>
+        </div>
       </header>
 
       {/* AI Summary */}
-      {overview && (
+      {session.overview && (
         <section className="mb-8 rounded-xl border border-border/50 bg-surface/60 p-5">
           <h2 className="mb-2 text-xs font-medium uppercase tracking-wider text-accent">
             Summary
           </h2>
-          <p className="text-sm leading-relaxed text-sub">{overview}</p>
+          <p className="text-sm leading-relaxed text-sub">{session.overview}</p>
         </section>
       )}
 
       {/* Transcript */}
       <section>
-        <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-muted">
+        <h2 className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
           Transcript
+          <span className="font-[family-name:var(--font-mono)] text-[10px] normal-case">
+            ({segments.length} segments)
+          </span>
         </h2>
 
-        <div className="space-y-3">
-          {conversation.transcript_segments?.length > 0 ? (
-            conversation.transcript_segments.map((segment, i) => (
+        <div className="space-y-2">
+          {segments.length > 0 ? (
+            segments.map((segment, i) => (
               <div key={i} className="group flex gap-3">
-                {/* Speaker label */}
-                <div className="w-20 shrink-0 pt-0.5 text-right">
-                  <span
-                    className={`text-xs font-medium ${segment.is_user ? 'text-accent' : 'text-sub'}`}
-                  >
-                    {segment.speaker_label ?? segment.speaker}
+                <div className="w-24 shrink-0 pt-1.5 text-right">
+                  <span className={`text-xs font-medium ${getSpeakerColor(segment.speaker, !!segment.isUser)}`}>
+                    {getSpeakerName(segment)}
                   </span>
                 </div>
-
-                {/* Text */}
-                <div className="flex-1 rounded-lg bg-surface/40 px-4 py-2.5 group-hover:bg-surface/60 transition-colors">
+                <div className="flex-1 rounded-lg bg-surface/40 px-4 py-2.5 transition-colors group-hover:bg-surface/60">
                   <p className="text-sm leading-relaxed text-text">{segment.text}</p>
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-sm text-muted italic">No transcript available</p>
+            <p className="text-sm italic text-muted">No transcript available</p>
           )}
         </div>
       </section>

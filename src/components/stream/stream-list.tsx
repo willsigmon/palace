@@ -1,17 +1,18 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
-import type { Conversation } from '@/types/api'
+import { useState, useCallback, useRef } from 'react'
+import type { ConversationListItem } from '@/types/api'
 import { getConversations } from '@/lib/api'
 import { ConversationCard } from './conversation-card'
+import { parseTimestamp } from '@/lib/format'
 import { API_DEFAULTS } from '@/lib/constants'
 
 interface StreamListProps {
-  readonly initialConversations: readonly Conversation[]
+  readonly initialConversations: readonly ConversationListItem[]
 }
 
 export function StreamList({ initialConversations }: StreamListProps) {
-  const [conversations, setConversations] = useState<readonly Conversation[]>(initialConversations)
+  const [conversations, setConversations] = useState<readonly ConversationListItem[]>(initialConversations)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(initialConversations.length >= API_DEFAULTS.PAGE_SIZE)
   const [offset, setOffset] = useState(initialConversations.length)
@@ -47,14 +48,13 @@ export function StreamList({ initialConversations }: StreamListProps) {
       setConversations((prev) => [...prev, ...newConversations])
       setOffset((prev) => prev + newConversations.length)
       setHasMore(newConversations.length >= API_DEFAULTS.PAGE_SIZE)
-    } catch (error) {
-      // Silent fail — user can scroll back up and try again
+    } catch {
+      // Silent fail — user can scroll to retry
     } finally {
       setLoading(false)
     }
   }
 
-  // Group conversations by date
   const grouped = groupByDate(conversations)
 
   return (
@@ -78,9 +78,8 @@ export function StreamList({ initialConversations }: StreamListProps) {
             {/* Conversation cards */}
             <div className="ml-10 space-y-3 md:ml-16">
               {items.map((conversation, i) => {
-                const isLast = i === items.length - 1
-                  && date === grouped[grouped.length - 1]?.[0]
-                  && i === (grouped[grouped.length - 1]?.[1]?.length ?? 0) - 1
+                const isLast = date === grouped[grouped.length - 1]?.[0]
+                  && i === items.length - 1
 
                 return (
                   <div
@@ -99,14 +98,12 @@ export function StreamList({ initialConversations }: StreamListProps) {
         ))}
       </div>
 
-      {/* Loading indicator */}
       {loading && (
         <div className="mt-8 flex justify-center">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
         </div>
       )}
 
-      {/* Empty state */}
       {conversations.length === 0 && !loading && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="font-[family-name:var(--font-serif)] text-2xl italic text-sub">
@@ -121,17 +118,14 @@ export function StreamList({ initialConversations }: StreamListProps) {
   )
 }
 
-/**
- * Group conversations by date heading
- */
-function groupByDate(conversations: readonly Conversation[]): readonly [string, readonly Conversation[]][] {
-  const groups = new Map<string, Conversation[]>()
+function groupByDate(conversations: readonly ConversationListItem[]): readonly [string, readonly ConversationListItem[]][] {
+  const groups = new Map<string, ConversationListItem[]>()
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
 
   for (const c of conversations) {
-    const date = new Date(c.created_at)
+    const date = parseTimestamp(c.startedAt)
     let label: string
 
     if (isSameDay(date, today)) {

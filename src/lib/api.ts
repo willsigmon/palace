@@ -4,20 +4,18 @@
  */
 
 import type {
-  Conversation,
+  ConversationListItem,
+  ConversationDetail,
   ConversationListParams,
+  GraphResponse,
   GraphParams,
   HealthResponse,
-  KnowledgeGraphEdge,
-  KnowledgeGraphNode,
   Person,
   PeopleListParams,
   SearchParams,
-  SearchResult,
+  SearchResponse,
   StatsResponse,
-  TimelineEvent,
   Memory,
-  ActionItem,
 } from '@/types/api'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
@@ -36,7 +34,6 @@ class ApiError extends Error {
 async function request<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
-  options?: { server?: boolean },
 ): Promise<T> {
   const url = new URL(path, API_BASE)
 
@@ -52,10 +49,8 @@ async function request<T>(
     'Content-Type': 'application/json',
   }
 
-  // Use server-side token for RSC, public token for client
-  const token = options?.server ? (process.env.API_TOKEN ?? API_TOKEN) : API_TOKEN
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
+  if (API_TOKEN) {
+    headers['Authorization'] = `Bearer ${API_TOKEN}`
   }
 
   const response = await fetch(url.toString(), {
@@ -85,7 +80,7 @@ export function getStats() {
 // === Conversations ===
 
 export function getConversations(params?: ConversationListParams) {
-  return request<readonly Conversation[]>('/api/conversations', {
+  return request<readonly ConversationListItem[]>('/api/conversations', {
     query: params?.query,
     category: params?.category,
     session_type: params?.session_type,
@@ -96,14 +91,14 @@ export function getConversations(params?: ConversationListParams) {
   })
 }
 
-export function getConversation(id: string) {
-  return request<Conversation>(`/api/conversations/${id}`, undefined, { server: true })
+export function getConversation(id: string | number) {
+  return request<ConversationDetail>(`/api/conversations/${id}`)
 }
 
 // === Search ===
 
 export function search(params: SearchParams) {
-  return request<readonly SearchResult[]>('/api/search', {
+  return request<SearchResponse>('/api/search', {
     query: params.query,
     limit: params.limit ?? 25,
     offset: params.offset ?? 0,
@@ -121,28 +116,19 @@ export function getPeople(params?: PeopleListParams) {
   })
 }
 
-export function getPerson(id: string) {
-  return request<Person & { conversations: readonly Conversation[] }>(`/api/people/${id}`)
+export function getPerson(id: string | number) {
+  return request<Person>(`/api/people/${id}`)
 }
 
 // === Knowledge Graph ===
 
 export function getGraph(params?: GraphParams) {
-  return request<{
-    readonly nodes: readonly KnowledgeGraphNode[]
-    readonly edges: readonly KnowledgeGraphEdge[]
-  }>('/api/graph', {
+  return request<GraphResponse>('/api/graph', {
     type: params?.type,
     query: params?.query,
     related_to: params?.related_to,
     limit: params?.limit,
   })
-}
-
-// === Timeline ===
-
-export function getTimeline(date: string) {
-  return request<readonly TimelineEvent[]>('/api/timeline', { date })
 }
 
 // === Memories ===
@@ -163,39 +149,4 @@ export function getMemories(params?: {
   })
 }
 
-// === Action Items ===
-
-export function getActionItems(params?: {
-  query?: string
-  completed?: boolean
-  limit?: number
-}) {
-  return request<readonly ActionItem[]>('/api/action-items', {
-    query: params?.query,
-    completed: params?.completed,
-    limit: params?.limit ?? 25,
-  })
-}
-
-// === Locations ===
-
-export function getLocations(params?: {
-  label?: string
-  since?: string
-  until?: string
-  limit?: number
-}) {
-  return request<readonly Location[]>('/api/locations', {
-    label: params?.label,
-    since: params?.since,
-    until: params?.until,
-    limit: params?.limit ?? 25,
-  })
-}
-
-// Re-export types for convenience
 export { ApiError }
-export type { HealthResponse, StatsResponse, SearchResult }
-
-// Missing import — Location is used above but defined in types
-import type { Location } from '@/types/api'
