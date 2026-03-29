@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import type { ConversationDetail as ConversationDetailType } from '@/types/api'
-import { formatDate, formatTime, formatDuration, calcDuration } from '@/lib/format'
+import type { ConversationDetail as ConversationDetailType, ConversationListItem, Memory } from '@/types/api'
+import { formatDate, formatTime, formatDuration, formatRelativeTime, calcDuration, truncate } from '@/lib/format'
 
 interface ConversationDetailProps {
   readonly detail: ConversationDetailType
+  readonly relatedConversations?: readonly ConversationListItem[]
+  readonly relatedMemories?: readonly Memory[]
 }
 
 // Distinct colors per speaker for visual differentiation
@@ -18,7 +20,7 @@ const SPEAKER_PALETTE = [
   { text: 'text-pink-400',     bg: 'bg-pink-400/8',     dot: 'bg-pink-400' },
 ]
 
-export function ConversationDetail({ detail }: ConversationDetailProps) {
+export function ConversationDetail({ detail, relatedConversations = [], relatedMemories = [] }: ConversationDetailProps) {
   const { session, segments, speakerNames } = detail
   const title = session.title ?? 'Untitled Conversation'
   const duration = calcDuration(session.startedAt, session.finishedAt)
@@ -164,6 +166,60 @@ export function ConversationDetail({ detail }: ConversationDetailProps) {
           )}
         </div>
       </section>
+
+      {/* Related Memories */}
+      {relatedMemories.length > 0 && (
+        <section className="mt-10 border-t border-border/20 pt-8">
+          <h2 className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-memory/70">
+            Memories from this day
+          </h2>
+          <div className="space-y-2">
+            {relatedMemories.map((m) => (
+              <div key={m.id} className="rounded-lg border border-memory/10 bg-memory/[0.02] px-4 py-2.5">
+                <p className="text-[12px] leading-relaxed text-sub/80">{truncate(m.content, 200)}</p>
+                <div className="mt-1.5 flex items-center gap-2">
+                  {m.sourceApp && (
+                    <span className="text-[9px] text-muted/50">{m.sourceApp}</span>
+                  )}
+                  <time className="text-[9px] text-muted/40 font-[family-name:var(--font-mono)]">
+                    {formatRelativeTime(m.createdAt)}
+                  </time>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Related Conversations */}
+      {relatedConversations.length > 0 && (
+        <section className="mt-8 border-t border-border/20 pt-8">
+          <h2 className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-serendipity/70">
+            Related conversations
+          </h2>
+          <div className="space-y-2">
+            {relatedConversations.map((c) => (
+              <Link
+                key={c.id}
+                href={`/conversation/${c.id}`}
+                className="group flex items-center justify-between rounded-lg border border-border/20 bg-surface/20 px-4 py-3 transition-all hover:border-border/40 hover:bg-surface/40"
+              >
+                <div>
+                  <p className="text-[13px] font-medium text-text group-hover:text-accent transition-colors">
+                    {c.title ?? 'Untitled'}
+                  </p>
+                  {c.overview && (
+                    <p className="mt-0.5 text-[11px] text-sub/50">{truncate(c.overview, 80)}</p>
+                  )}
+                </div>
+                <time className="shrink-0 ml-3 text-[10px] text-muted/40 font-[family-name:var(--font-mono)]">
+                  {formatRelativeTime(c.startedAt)}
+                </time>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </article>
   )
 }

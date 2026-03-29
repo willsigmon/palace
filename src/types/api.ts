@@ -158,17 +158,17 @@ export interface StatsResponse {
 // === Knowledge Graph (GET /api/graph) ===
 
 export interface KnowledgeGraphNode {
-  readonly id: number
-  readonly name: string
-  readonly type: string
-  readonly properties: Record<string, unknown>
+  readonly node_id: string
+  readonly label: string
+  readonly node_type: string
+  readonly aliases: string | null
+  readonly metadata: string | null
 }
 
 export interface KnowledgeGraphEdge {
-  readonly source: number
-  readonly target: number
-  readonly relationship: string
-  readonly weight?: number
+  readonly source_node_id: string
+  readonly target_node_id: string
+  readonly label: string
 }
 
 export interface GraphResponse {

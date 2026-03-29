@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAppStore } from '@/stores/app-store'
 import { NAV_ITEMS } from '@/lib/constants'
+import { ApiStatus } from './api-status'
 
 const ICONS: Record<string, React.ReactNode> = {
   stream: (
@@ -108,14 +109,10 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
-      {sidebarExpanded && (
-        <div className="border-t border-border/30 px-3 py-3">
-          <p className="text-[10px] text-muted/50 font-[family-name:var(--font-mono)]">
-            v0.1.0 — Phase 1
-          </p>
-        </div>
-      )}
+      {/* Footer with API status */}
+      <div className="border-t border-border/30 px-3 py-2.5">
+        <ApiStatus expanded={sidebarExpanded} />
+      </div>
     </aside>
   )
 }
