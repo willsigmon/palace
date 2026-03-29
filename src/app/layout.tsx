@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { AmbientBackground } from '@/components/layout/ambient-background'
 import { SearchOverlay } from '@/components/search/search-overlay'
+import { KeyboardNav } from '@/components/stream/keyboard-nav'
 
 const inter = Inter({
   variable: '--font-sans',
@@ -63,6 +64,7 @@ export default function RootLayout({
         <AmbientBackground />
         <Sidebar />
         <SearchOverlay />
+        <KeyboardNav />
 
         {/* Main content — offset for sidebar on desktop */}
         <main className="min-h-screen pb-20 md:pl-14 md:pb-0">

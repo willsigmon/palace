@@ -180,14 +180,14 @@ export function SearchOverlay() {
   if (!searchOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-[15vh]" data-search-overlay>
       <div
         className="absolute inset-0 glass-heavy"
         onClick={closeSearch}
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-xl mx-4 rounded-xl border border-border bg-surface shadow-glass">
+      <div className="relative w-full max-w-xl mx-2 sm:mx-4 rounded-xl border border-border bg-surface shadow-glass max-h-[90vh] sm:max-h-[70vh] flex flex-col">
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="shrink-0 text-sub">
             <circle cx="9" cy="9" r="5" />

@@ -31,7 +31,7 @@ function getCategoryColors(category: string | null) {
   return CATEGORY_COLORS[category.toLowerCase()] ?? DEFAULT_COLORS
 }
 
-export function ConversationCard({ conversation }: ConversationCardProps) {
+export function ConversationCard({ conversation, index }: ConversationCardProps) {
   const title = conversation.title ?? 'Untitled'
   const overview = conversation.overview ?? ''
   const duration = calcDuration(conversation.startedAt, conversation.finishedAt)
@@ -58,6 +58,7 @@ export function ConversationCard({ conversation }: ConversationCardProps) {
     return (
       <Link
         href={`/conversation/${conversation.id}`}
+        data-card-index={index}
         className={`group flex items-center gap-4 rounded-lg border border-border/30 border-l-2 ${colors.border} bg-surface/30 px-4 py-2.5 transition-all duration-200 hover:border-border/50 hover:bg-surface/50`}
       >
         {conversation.emoji && <span className="text-sm">{conversation.emoji}</span>}
@@ -86,6 +87,7 @@ export function ConversationCard({ conversation }: ConversationCardProps) {
   return (
     <Link
       href={`/conversation/${conversation.id}`}
+      data-card-index={index}
       className={`group relative block rounded-xl border border-border/40 border-l-[3px] ${colors.border} bg-surface/50 p-5 transition-all duration-250 hover:border-border/60 hover:bg-surface/70 hover:shadow-card`}
     >
       {/* Top row: emoji + time + duration + category */}
