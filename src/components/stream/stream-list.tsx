@@ -87,7 +87,7 @@ export function StreamList({ initialConversations }: StreamListProps) {
                     key={conversation.id}
                     ref={isLast ? lastCardRef : undefined}
                   >
-                    <ScrollReveal delay={i * 0.06}>
+                    <ScrollReveal delay={i < 5 ? i * 0.05 : 0}>
                       <ConversationCard
                         conversation={conversation}
                         index={i}

@@ -1,10 +1,6 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-
-gsap.registerPlugin(ScrollTrigger)
+import { useRef, useEffect, useState } from 'react'
 
 interface ScrollRevealProps {
   readonly children: React.ReactNode
@@ -13,42 +9,48 @@ interface ScrollRevealProps {
 }
 
 /**
- * Wraps children in a GSAP-powered scroll reveal animation.
- * Cards fade in and slide up as they enter the viewport.
+ * CSS + IntersectionObserver scroll reveal.
+ * Simpler and more reliable than GSAP ScrollTrigger for this use case.
+ * GSAP is reserved for complex timeline animations (graph, transitions).
  */
 export function ScrollReveal({ children, delay = 0, className = '' }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
 
-    // Check for reduced motion preference
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReduced) return
+    if (prefersReduced) {
+      setVisible(true)
+      return
+    }
 
-    gsap.set(el, { opacity: 0, y: 24 })
-
-    const trigger = ScrollTrigger.create({
-      trigger: el,
-      start: 'top 90%',
-      once: true,
-      onEnter: () => {
-        gsap.to(el, {
-          opacity: 1,
-          y: 0,
-          duration: 0.5,
-          delay,
-          ease: 'power2.out',
-        })
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setVisible(true)
+          observer.disconnect()
+        }
       },
-    })
+      { threshold: 0.05, rootMargin: '0px 0px 50px 0px' },
+    )
 
-    return () => trigger.kill()
-  }, [delay])
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
-    <div ref={ref} className={className}>
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: `opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${delay}s`,
+      }}
+    >
       {children}
     </div>
   )
