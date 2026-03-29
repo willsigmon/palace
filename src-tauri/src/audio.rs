@@ -1,25 +1,29 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use hound::{WavSpec, WavWriter};
-use std::io::BufWriter;
 use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 use std::fs;
-use tauri::{AppHandle, Manager};
+
+// Audio capture module for PALACE desktop app
 
 #[derive(Clone, serde::Serialize)]
-struct RecordingStatus {
+pub struct RecordingStatus {
     recording: bool,
     file_path: Option<String>,
     duration_seconds: f64,
 }
 
+// cpal::Stream is !Send+!Sync, but we only access from main thread via Tauri commands
+struct StreamWrapper(cpal::Stream);
+unsafe impl Send for StreamWrapper {}
+unsafe impl Sync for StreamWrapper {}
+
 struct RecordingState {
-    stream: Option<cpal::Stream>,
+    stream: Option<StreamWrapper>,
     file_path: Option<String>,
     start_time: Option<std::time::Instant>,
 }
 
-// Global state
 static RECORDING: std::sync::OnceLock<Arc<Mutex<RecordingState>>> = std::sync::OnceLock::new();
 
 fn get_state() -> &'static Arc<Mutex<RecordingState>> {
@@ -51,18 +55,8 @@ pub fn start_recording(source: String) -> Result<String, String> {
     }
 
     let host = cpal::default_host();
-
-    // Choose input device based on source
-    let device = if source == "system" {
-        // Try to get loopback/system audio device
-        // On macOS, this requires BlackHole or similar virtual audio device
-        host.default_input_device()
-    } else {
-        // Microphone (ambient)
-        host.default_input_device()
-    };
-
-    let device = device.ok_or("No audio input device found")?;
+    let device = host.default_input_device()
+        .ok_or("No audio input device found")?;
     let config = device.default_input_config().map_err(|e| e.to_string())?;
 
     let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
@@ -126,7 +120,7 @@ pub fn start_recording(source: String) -> Result<String, String> {
 
     stream.play().map_err(|e| e.to_string())?;
 
-    state.stream = Some(stream);
+    state.stream = Some(StreamWrapper(stream));
     state.file_path = Some(file_path_str.clone());
     state.start_time = Some(std::time::Instant::now());
 
@@ -138,14 +132,11 @@ pub fn stop_recording() -> Result<RecordingStatus, String> {
     let state = get_state();
     let mut state = state.lock().map_err(|e| e.to_string())?;
 
-    let duration = state
-        .start_time
+    let duration = state.start_time
         .map(|t| t.elapsed().as_secs_f64())
         .unwrap_or(0.0);
-
     let file_path = state.file_path.clone();
 
-    // Drop stream to stop recording and flush writer
     state.stream = None;
     state.file_path = None;
     state.start_time = None;
@@ -158,36 +149,30 @@ pub fn stop_recording() -> Result<RecordingStatus, String> {
 }
 
 #[tauri::command]
-pub fn recording_status() -> RecordingStatus {
+pub fn recording_status() -> Result<RecordingStatus, String> {
     let state = get_state();
-    let state = state.lock().unwrap();
+    let state = state.lock().map_err(|e| e.to_string())?;
 
-    RecordingStatus {
+    Ok(RecordingStatus {
         recording: state.stream.is_some(),
         file_path: state.file_path.clone(),
-        duration_seconds: state
-            .start_time
+        duration_seconds: state.start_time
             .map(|t| t.elapsed().as_secs_f64())
             .unwrap_or(0.0),
-    }
+    })
 }
 
 #[tauri::command]
-pub fn list_recordings() -> Vec<String> {
+pub fn list_recordings() -> Result<Vec<String>, String> {
     let dir = recordings_dir();
-    fs::read_dir(dir)
+    Ok(fs::read_dir(dir)
         .ok()
         .map(|entries| {
             entries
                 .filter_map(|e| e.ok())
-                .filter(|e| {
-                    e.path()
-                        .extension()
-                        .map(|ext| ext == "wav")
-                        .unwrap_or(false)
-                })
+                .filter(|e| e.path().extension().is_some_and(|ext| ext == "wav"))
                 .map(|e| e.path().to_string_lossy().to_string())
                 .collect()
         })
-        .unwrap_or_default()
+        .unwrap_or_default())
 }
