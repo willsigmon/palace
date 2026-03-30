@@ -5,7 +5,7 @@ import type { ConversationListItem } from '@/types/api'
 import { formatRelativeTime, formatTime, formatDuration, calcDuration, truncate } from '@/lib/format'
 
 interface ConversationCardProps {
-  readonly conversation: ConversationListItem
+  readonly conversation: ConversationListItem & { source?: string }
   readonly index: number
 }
 
@@ -144,6 +144,9 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
 
         <span className="flex-1" />
 
+        {conversation.source === 'limitless' && (
+          <span className="rounded-full bg-indigo-400/10 px-1.5 py-0.5 text-[8px] font-medium text-indigo-400/60">L</span>
+        )}
         <time className="text-[11px] text-muted font-[family-name:var(--font-mono)]" dateTime={conversation.startedAt}>
           {formatRelativeTime(conversation.startedAt)}
         </time>
