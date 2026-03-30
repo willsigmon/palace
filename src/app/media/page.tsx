@@ -31,6 +31,7 @@ const TYPE_FILTERS = [
   { value: 'show', label: 'Shows', icon: '📺', color: 'bg-blue-400/15 text-blue-400 border-blue-400/20' },
   { value: 'game', label: 'Games', icon: '🎮', color: 'bg-emerald-400/15 text-emerald-400 border-emerald-400/20' },
   { value: 'podcast', label: 'Podcasts', icon: '🎙', color: 'bg-amber-400/15 text-amber-400 border-amber-400/20' },
+  { value: 'video', label: 'Videos', icon: '📱', color: 'bg-red-400/15 text-red-400 border-red-400/20' },
   { value: 'movie', label: 'Movies', icon: '🎬', color: 'bg-rose-400/15 text-rose-400 border-rose-400/20' },
 ] as const
 
@@ -40,6 +41,7 @@ const TYPE_STYLES: Record<string, { icon: string; color: string; border: string 
   game: { icon: '🎮', color: 'text-emerald-400', border: 'border-l-emerald-400/50' },
   podcast: { icon: '🎙', color: 'text-amber-400', border: 'border-l-amber-400/50' },
   movie: { icon: '🎬', color: 'text-rose-400', border: 'border-l-rose-400/50' },
+  video: { icon: '📱', color: 'text-red-400', border: 'border-l-red-400/50' },
   other: { icon: '📱', color: 'text-sub', border: 'border-l-border' },
 }
 
