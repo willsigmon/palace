@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Person } from '@/types/api'
 import { getPeople } from '@/lib/api'
@@ -8,6 +9,8 @@ import { getPeople } from '@/lib/api'
 interface PeopleDirectoryProps {
   readonly initialPeople: readonly Person[]
 }
+
+type SortMode = 'alpha' | 'conversations'
 
 const RELATIONSHIP_FILTERS = [
   { value: '', label: 'All' },
@@ -37,10 +40,21 @@ function getInitials(name: string): string {
 }
 
 export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
+  const searchParams = useSearchParams()
   const [people, setPeople] = useState<readonly Person[]>(initialPeople)
   const [query, setQuery] = useState('')
   const [relationship, setRelationship] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sortMode, setSortMode] = useState<SortMode>('alpha')
+
+  // Auto-populate and trigger search from ?q= URL param on mount
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q && q.trim().length > 0) {
+      void handleSearch(q.trim())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSearch(q: string) {
     setQuery(q)
@@ -81,17 +95,30 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
     }
   }
 
-  // Group by first letter
+  // Group by first letter (alpha mode) or flat sorted list (conversations mode)
   const grouped = useMemo(() => {
-    const groups = new Map<string, Person[]>()
-    // Matches names that are purely numeric/phone-like: digits, spaces, dashes, parens
     const phonePattern = /^[\d\s\-().+]+$/
-    for (const person of people) {
+
+    const filtered = people.filter((person) => {
       const name = person.display_name ?? person.name
-      // Skip phone-number-only entries in display
-      if (name.startsWith('+')) continue
-      // Skip names that look like phone numbers (starts with digit and contains only phone chars)
-      if (/^\d/.test(name) && phonePattern.test(name)) continue
+      if (name.startsWith('+')) return false
+      if (/^\d/.test(name) && phonePattern.test(name)) return false
+      return true
+    })
+
+    if (sortMode === 'conversations') {
+      const sorted = [...filtered].sort((a, b) => {
+        const ca = a.conversation_count ?? 0
+        const cb = b.conversation_count ?? 0
+        if (cb !== ca) return cb - ca
+        return (a.display_name ?? a.name).localeCompare(b.display_name ?? b.name)
+      })
+      return [['—', sorted]] as [string, Person[]][]
+    }
+
+    const groups = new Map<string, Person[]>()
+    for (const person of filtered) {
+      const name = person.display_name ?? person.name
       const letter = name[0]?.toUpperCase() ?? '#'
       const existing = groups.get(letter)
       if (existing) {
@@ -101,7 +128,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
       }
     }
     return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b))
-  }, [people])
+  }, [people, sortMode])
 
   const totalShown = grouped.reduce((sum, [, items]) => sum + items.length, 0)
 
@@ -151,6 +178,25 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
             </button>
           ))}
         </div>
+
+        <div className="flex items-center gap-1 border-l border-border/30 pl-3">
+          <button
+            onClick={() => setSortMode('alpha')}
+            className={`px-2 py-1 text-xs font-medium transition-colors ${
+              sortMode === 'alpha' ? 'text-accent' : 'text-sub hover:text-text'
+            }`}
+          >
+            A-Z
+          </button>
+          <button
+            onClick={() => setSortMode('conversations')}
+            className={`px-2 py-1 text-xs font-medium transition-colors ${
+              sortMode === 'conversations' ? 'text-accent' : 'text-sub hover:text-text'
+            }`}
+          >
+            Most conversations
+          </button>
+        </div>
       </div>
 
       {/* Loading */}
@@ -161,13 +207,15 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
         </div>
       )}
 
-      {/* People list grouped alphabetically */}
+      {/* People list grouped alphabetically or sorted by conversations */}
       <div className="space-y-6">
         {grouped.map(([letter, items]) => (
           <section key={letter}>
-            <h2 className="sticky top-0 z-10 mb-2 border-b border-border/30 bg-void/80 pb-1 text-xs font-bold uppercase tracking-widest text-accent backdrop-blur-sm">
-              {letter}
-            </h2>
+            {sortMode === 'alpha' && (
+              <h2 className="sticky top-0 z-10 mb-2 border-b border-border/30 bg-void/80 pb-1 text-xs font-bold uppercase tracking-widest text-accent backdrop-blur-sm">
+                {letter}
+              </h2>
+            )}
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((person) => {
                 const source = getSource(person)

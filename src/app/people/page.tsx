@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { getPeople } from '@/lib/api'
 import { PeopleDirectory } from '@/components/people/people-directory'
 
@@ -15,7 +16,9 @@ export default async function PeoplePage() {
 
   return (
     <div className="mx-auto max-w-4xl px-[var(--space-page)] py-8">
-      <PeopleDirectory initialPeople={people} />
+      <Suspense>
+        <PeopleDirectory initialPeople={people} />
+      </Suspense>
     </div>
   )
 }
