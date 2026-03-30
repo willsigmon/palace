@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { formatRelativeTime, truncate } from '@/lib/format'
+import { Avatar } from '@/components/ui/avatar'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
 
@@ -103,8 +104,9 @@ export default function VerticalsPage() {
                         key={p.person_id}
                         href={`/people/${p.person_id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded-full bg-elevated/50 px-2 py-0.5 text-[10px] text-sub hover:text-accent transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-elevated/50 px-1.5 py-0.5 text-[10px] text-sub hover:text-accent transition-colors"
                       >
+                        <Avatar name={p.name} size="sm" />
                         {p.name.split(' ')[0]}
                       </Link>
                     ))}

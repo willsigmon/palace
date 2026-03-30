@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { search } from '@/lib/api'
 import type { SearchResponse } from '@/types/api'
 import { formatRelativeTime, truncate } from '@/lib/format'
+import { Avatar } from '@/components/ui/avatar'
 
 export default function SearchPage() {
   const [query, setQuery] = useState('')
@@ -154,9 +155,7 @@ export default function SearchPage() {
                     href={`/people/${p.id}`}
                     className="group flex items-center gap-3 rounded-lg border border-border/30 bg-surface/30 p-3 transition-all hover:border-border/50 hover:bg-surface/50"
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-elevated text-xs font-medium text-sub group-hover:text-accent transition-colors">
-                      {(p.display_name ?? p.name).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-                    </div>
+                    <Avatar name={p.display_name ?? p.name} size="lg" />
                     <div>
                       <p className="text-sm font-medium text-text group-hover:text-accent transition-colors">
                         {p.display_name ?? p.name}
