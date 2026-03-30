@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
@@ -24,12 +25,23 @@ const EXAMPLE_QUESTIONS = [
   "What happened last Tuesday?",
 ]
 
-export default function AskPage() {
+function AskPageInner() {
+  const searchParams = useSearchParams()
   const [question, setQuestion] = useState('')
   const [response, setResponse] = useState<AskResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState<AskResponse[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q?.trim()) {
+      setQuestion(q)
+      ask(q)
+    }
+    // Only run on mount — ask is stable within this render cycle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function ask(q: string) {
     const query = q || question
@@ -197,5 +209,13 @@ export default function AskPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function AskPage() {
+  return (
+    <Suspense>
+      <AskPageInner />
+    </Suspense>
   )
 }

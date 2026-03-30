@@ -83,34 +83,30 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick }: ForceGra
         label: e.label,
       }))
 
-    // Find connected node IDs
+    // Show ALL nodes — connected and unconnected alike
     const connectedIds = new Set<string>()
     for (const e of mutableEdges) {
       connectedIds.add(e.source as string)
       connectedIds.add(e.target as string)
     }
 
-    // Only show connected nodes + center node to reduce clutter
-    const visibleNodes = mutableNodes.filter(
-      n => connectedIds.has(n.node_id) || n.node_id === centerNodeId
-    )
-    const visibleNodeIds = new Set(visibleNodes.map(n => n.node_id))
-    const visibleEdges = mutableEdges.filter(
-      e => visibleNodeIds.has(e.source as string) && visibleNodeIds.has(e.target as string)
-    )
-
-    // If no edges, show all nodes
-    const finalNodes = visibleEdges.length > 0 ? visibleNodes : mutableNodes.slice(0, 30)
-    const finalEdges = visibleEdges
+    const finalNodes = mutableNodes
+    const finalEdges = mutableEdges
 
     // D3 force simulation
+    // Connected nodes cluster tightly; unconnected nodes orbit loosely via weaker radial force
     const simulation = d3.forceSimulation(finalNodes as d3.SimulationNodeDatum[])
       .force('link', d3.forceLink(finalEdges)
         .id((d: any) => d.node_id)
-        .distance(120)
+        .distance(80)
         .strength(0.8))
-      .force('charge', d3.forceManyBody().strength(-300))
-      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('charge', d3.forceManyBody().strength(-150))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
+      .force('radial', d3.forceRadial(
+        (d: any) => connectedIds.has(d.node_id) ? 0 : 180,
+        width / 2,
+        height / 2
+      ).strength((d: any) => connectedIds.has(d.node_id) ? 0 : 0.04))
       .force('collision', d3.forceCollide().radius(40))
 
     // Pin center node

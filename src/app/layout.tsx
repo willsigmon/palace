@@ -38,6 +38,10 @@ export const metadata: Metadata = {
   },
   description: 'Personal AI Life Archive & Cognitive Explorer',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/icon-192.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -70,7 +74,9 @@ export default function RootLayout({
 
         {/* Main content — offset for sidebar on desktop */}
         <main className="min-h-screen pb-20 md:pl-14 md:pb-0">
-          {children}
+          <div className="animate-fade-in">
+            {children}
+          </div>
         </main>
 
         <MobileNav />

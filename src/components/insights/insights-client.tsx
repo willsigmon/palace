@@ -221,17 +221,17 @@ function Patterns({ data }: { data: PatternsResponse }) {
           <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted/60">
             When you talk most
           </p>
-          <div className="flex items-end gap-px h-16">
+          <div className="flex items-end gap-[2px] h-24">
             {Array.from({ length: 24 }, (_, h) => {
               const entry = data.hourlyEnergy.find(e => e.hour === h)
               const count = entry?.count ?? 0
               const max = Math.max(...data.hourlyEnergy.map(e => e.count))
               const height = max > 0 ? (count / max) * 100 : 0
               return (
-                <div key={h} className="flex-1 flex flex-col items-center gap-0.5">
+                <div key={h} className="flex-1 flex flex-col items-center">
                   <div
-                    className="w-full rounded-t-sm bg-pattern/30 transition-all"
-                    style={{ height: `${height}%`, minHeight: count > 0 ? '2px' : '0' }}
+                    className="w-full rounded-t-sm bg-pattern/50 transition-all"
+                    style={{ height: `${height}%`, minHeight: count > 0 ? '4px' : '0' }}
                     title={`${h}:00 — ${count} conversations`}
                   />
                 </div>

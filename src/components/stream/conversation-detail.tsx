@@ -31,6 +31,7 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
 
   const [topicInfo, setTopicInfo] = useState<string | null>(null)
   const [topicLoading, setTopicLoading] = useState(false)
+  const [transcriptSearch, setTranscriptSearch] = useState('')
 
   const lookUpTopic = useCallback(async () => {
     if (!session.title) return
@@ -70,6 +71,41 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
 
   // Merge consecutive same-speaker segments for cleaner reading
   const mergedSegments = mergeConsecutive(segments)
+
+  // Transcript search derived values
+  const searchTerm = transcriptSearch.trim().toLowerCase()
+  const matchCount = searchTerm
+    ? mergedSegments.reduce((acc, seg) => {
+        const text = seg.text.toLowerCase()
+        let count = 0
+        let pos = 0
+        while ((pos = text.indexOf(searchTerm, pos)) !== -1) {
+          count++
+          pos += searchTerm.length
+        }
+        return acc + count
+      }, 0)
+    : 0
+
+  function highlightText(text: string): React.ReactNode {
+    if (!searchTerm) return text
+    const parts: React.ReactNode[] = []
+    const lower = text.toLowerCase()
+    let last = 0
+    let pos = 0
+    let key = 0
+    while ((pos = lower.indexOf(searchTerm, last)) !== -1) {
+      if (pos > last) parts.push(text.slice(last, pos))
+      parts.push(
+        <mark key={key++} className="bg-accent/30 text-text rounded-sm px-0.5">
+          {text.slice(pos, pos + searchTerm.length)}
+        </mark>
+      )
+      last = pos + searchTerm.length
+    }
+    if (last < text.length) parts.push(text.slice(last))
+    return <>{parts}</>
+  }
 
   return (
     <article>
@@ -220,10 +256,26 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
 
       {/* Transcript */}
       <section>
-        <h2 className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-muted/60">
-          Transcript
-          <span className="ml-2 font-normal">({segments.length})</span>
-        </h2>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted/60">
+            Transcript
+            <span className="ml-2 font-normal">({segments.length})</span>
+          </h2>
+          <div className="flex items-center gap-2">
+            {searchTerm && (
+              <span className="text-[10px] text-muted/40 font-[family-name:var(--font-mono)] shrink-0">
+                {matchCount} {matchCount === 1 ? 'match' : 'matches'}
+              </span>
+            )}
+            <input
+              type="search"
+              value={transcriptSearch}
+              onChange={(e) => setTranscriptSearch(e.target.value)}
+              placeholder="Search transcript…"
+              className="w-36 rounded-lg border border-border/30 bg-surface/20 px-2.5 py-1 text-[11px] text-text placeholder:text-muted/40 outline-none transition-all focus:border-accent/40 focus:w-48"
+            />
+          </div>
+        </div>
 
         <div className="space-y-1">
           {mergedSegments.length > 0 ? (
@@ -247,7 +299,7 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] leading-[1.7] text-text/90">{segment.text}</p>
+                    <p className="text-[13px] leading-[1.7] text-text/90">{highlightText(segment.text)}</p>
                   </div>
                 </div>
               )
