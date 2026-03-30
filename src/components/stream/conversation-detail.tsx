@@ -5,11 +5,13 @@ import Link from 'next/link'
 import type { ConversationDetail as ConversationDetailType, ConversationListItem, Memory } from '@/types/api'
 import { formatDate, formatTime, formatDuration, formatRelativeTime, calcDuration, truncate } from '@/lib/format'
 import { getEnrichment } from '@/lib/api'
+import type { SpeakerSuggestionsResponse } from '@/lib/api'
 
 interface ConversationDetailProps {
   readonly detail: ConversationDetailType
   readonly relatedConversations?: readonly ConversationListItem[]
   readonly relatedMemories?: readonly Memory[]
+  readonly speakerSuggestions?: SpeakerSuggestionsResponse | null
 }
 
 // Distinct colors per speaker for visual differentiation
@@ -22,7 +24,7 @@ const SPEAKER_PALETTE = [
   { text: 'text-pink-400',     bg: 'bg-pink-400/8',     dot: 'bg-pink-400' },
 ]
 
-export function ConversationDetail({ detail, relatedConversations = [], relatedMemories = [] }: ConversationDetailProps) {
+export function ConversationDetail({ detail, relatedConversations = [], relatedMemories = [], speakerSuggestions }: ConversationDetailProps) {
   const { session, segments, speakerNames } = detail
   const title = session.title ?? 'Untitled Conversation'
   const duration = calcDuration(session.startedAt, session.finishedAt)
@@ -116,6 +118,42 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
           </div>
         </div>
       </header>
+
+      {/* Location + Speaker Suggestions */}
+      {speakerSuggestions?.location && (
+        <div className="mb-6 rounded-xl border border-pattern/15 bg-pattern/[0.02] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-pattern/60">
+              <path d="M10 2C7 2 4 5 4 8.5C4 13 10 18 10 18S16 13 16 8.5C16 5 13 2 10 2Z" />
+              <circle cx="10" cy="8.5" r="2" />
+            </svg>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-pattern/60">
+              {speakerSuggestions.location.label ?? 'Unknown Location'}
+            </span>
+            <span className="text-[9px] text-muted/30 font-[family-name:var(--font-mono)]">
+              {speakerSuggestions.location.lat.toFixed(4)}, {speakerSuggestions.location.lon.toFixed(4)}
+            </span>
+          </div>
+          {speakerSuggestions.suggestions.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-[10px] text-muted/40">Who might be here:</p>
+              <div className="flex flex-wrap gap-2">
+                {speakerSuggestions.suggestions.map((s) => (
+                  <Link
+                    key={s.person_id}
+                    href={`/people/${s.person_id}`}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-pattern/8 px-3 py-1 text-[11px] text-pattern/70 transition-colors hover:bg-pattern/15 hover:text-pattern"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-pattern/40" />
+                    {s.name}
+                    <span className="text-[9px] text-muted/30">{Math.round(s.confidence * 100)}%</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* AI Summary */}
       {session.overview && (

@@ -266,4 +266,30 @@ export interface EnrichmentResponse {
   readonly cached_at?: string
 }
 
+// === Speaker Suggestions ===
+
+export function getSpeakerSuggestions(conversationId: number) {
+  return request<SpeakerSuggestionsResponse>('/api/speaker-suggestions', {
+    conversation_id: conversationId,
+  })
+}
+
+export interface SpeakerSuggestionsResponse {
+  readonly conversation_id: number
+  readonly location: {
+    readonly lat: number
+    readonly lon: number
+    readonly label: string | null
+  } | null
+  readonly location_source?: string
+  readonly suggestions: readonly {
+    readonly name: string
+    readonly person_id: number
+    readonly relationship: string
+    readonly times_seen_here: number
+    readonly confidence: number
+    readonly reason: string
+  }[]
+}
+
 export { ApiError }

@@ -1,4 +1,4 @@
-import { getConversation, getConversations, getMemories } from '@/lib/api'
+import { getConversation, getConversations, getMemories, getSpeakerSuggestions } from '@/lib/api'
 import { ConversationDetail } from '@/components/stream/conversation-detail'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -28,25 +28,22 @@ export default async function ConversationPage({ params }: ConversationPageProps
     notFound()
   }
 
-  // Fetch related data in parallel — same category conversations + recent memories
   const category = detail.session.category
   const dateStr = detail.session.startedAt?.split(' ')[0]
 
   let relatedConversations: Awaited<ReturnType<typeof getConversations>> = []
   let relatedMemories: Awaited<ReturnType<typeof getMemories>> = []
+  let speakerSuggestions: Awaited<ReturnType<typeof getSpeakerSuggestions>> | null = null
 
   try {
-    const [convos, mems] = await Promise.all([
-      category
-        ? getConversations({ category, limit: 5 })
-        : Promise.resolve([]),
-      dateStr
-        ? getMemories({ since: dateStr, limit: 8 })
-        : Promise.resolve([]),
+    const [convos, mems, speakers] = await Promise.all([
+      category ? getConversations({ category, limit: 5 }) : Promise.resolve([]),
+      dateStr ? getMemories({ since: dateStr, limit: 8 }) : Promise.resolve([]),
+      getSpeakerSuggestions(parseInt(id)).catch(() => null),
     ])
-    // Filter out current conversation from related
     relatedConversations = convos.filter(c => String(c.id) !== String(id))?.slice(0, 4) ?? []
     relatedMemories = mems.slice(0, 6)
+    speakerSuggestions = speakers
   } catch {
     relatedConversations = []
     relatedMemories = []
@@ -58,6 +55,7 @@ export default async function ConversationPage({ params }: ConversationPageProps
         detail={detail}
         relatedConversations={relatedConversations}
         relatedMemories={relatedMemories}
+        speakerSuggestions={speakerSuggestions}
       />
     </div>
   )
