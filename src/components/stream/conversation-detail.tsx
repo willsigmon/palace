@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { ConversationDetail as ConversationDetailType, ConversationListItem, Memory } from '@/types/api'
@@ -38,6 +38,36 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   const [shareCopied, setShareCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Notes state
+  const NOTES_KEY = `palace-note-${session.id}`
+  const [notes, setNotes] = useState('')
+  const [notesSaved, setNotesSaved] = useState(false)
+  const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const notesSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const stored = localStorage.getItem(NOTES_KEY)
+    if (stored !== null) setNotes(stored)
+  }, [NOTES_KEY])
+
+  const saveNotes = useCallback((value: string) => {
+    localStorage.setItem(NOTES_KEY, value)
+    setNotesSaved(true)
+    if (notesSavedTimerRef.current) clearTimeout(notesSavedTimerRef.current)
+    notesSavedTimerRef.current = setTimeout(() => setNotesSaved(false), 2000)
+  }, [NOTES_KEY])
+
+  const handleNotesChange = useCallback((value: string) => {
+    setNotes(value)
+    if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current)
+    notesDebounceRef.current = setTimeout(() => saveNotes(value), 1000)
+  }, [saveNotes])
+
+  const handleNotesBlur = useCallback(() => {
+    if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current)
+    saveNotes(notes)
+  }, [notes, saveNotes])
 
   const lookUpTopic = useCallback(async () => {
     if (!session.title) return
@@ -418,6 +448,29 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
             <p className="py-8 text-center text-sm italic text-muted">No transcript available</p>
           )}
         </div>
+      </section>
+
+      {/* Notes */}
+      <section className="mt-10 border-t border-border/20 pt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted/60">
+            Notes
+          </h2>
+          {notesSaved && (
+            <span className="text-[10px] font-[family-name:var(--font-mono)] text-accent/60 transition-opacity">
+              Saved
+            </span>
+          )}
+        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => handleNotesChange(e.target.value)}
+          onBlur={handleNotesBlur}
+          placeholder="Add your notes about this conversation..."
+          rows={4}
+          className="w-full resize-y rounded-xl border border-border/20 bg-surface/10 px-4 py-3 text-[13px] leading-[1.7] text-text placeholder:text-muted/30 outline-none transition-colors focus:border-accent/30 focus:bg-surface/20"
+          spellCheck={false}
+        />
       </section>
 
       {/* Related Memories */}
