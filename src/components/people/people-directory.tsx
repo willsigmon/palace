@@ -84,10 +84,14 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
   // Group by first letter
   const grouped = useMemo(() => {
     const groups = new Map<string, Person[]>()
+    // Matches names that are purely numeric/phone-like: digits, spaces, dashes, parens
+    const phonePattern = /^[\d\s\-().+]+$/
     for (const person of people) {
       const name = person.display_name ?? person.name
       // Skip phone-number-only entries in display
       if (name.startsWith('+')) continue
+      // Skip names that look like phone numbers (starts with digit and contains only phone chars)
+      if (/^\d/.test(name) && phonePattern.test(name)) continue
       const letter = name[0]?.toUpperCase() ?? '#'
       const existing = groups.get(letter)
       if (existing) {

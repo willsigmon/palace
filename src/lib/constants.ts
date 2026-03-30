@@ -10,6 +10,10 @@ export const NAV_ITEMS = [
   { id: 'search', label: 'Search', href: '/search', icon: 'search' },
   { id: 'graph', label: 'Graph', href: '/graph', icon: 'graph' },
   { id: 'insights', label: 'Insights', href: '/insights', icon: 'insights' },
+  { id: 'ask', label: 'Ask', href: '/ask', icon: 'ask' },
+  { id: 'verticals', label: 'Verticals', href: '/verticals', icon: 'verticals' },
+  { id: 'media', label: 'Media', href: '/media', icon: 'media' },
+  { id: 'actions', label: 'Actions', href: '/actions', icon: 'actions' },
 ] as const
 
 // API defaults

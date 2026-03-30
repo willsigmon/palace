@@ -14,11 +14,16 @@ interface StreamListProps {
   readonly initialConversations: readonly ConversationListItem[]
 }
 
+function isUntitled(title: string | null | undefined): boolean {
+  return !title || title.trim() === '' || title.trim().toLowerCase() === 'untitled'
+}
+
 export function StreamList({ initialConversations }: StreamListProps) {
   const [conversations, setConversations] = useState<readonly ConversationListItem[]>(initialConversations)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(initialConversations.length >= API_DEFAULTS.PAGE_SIZE)
   const [offset, setOffset] = useState(initialConversations.length)
+  const [showUntitled, setShowUntitled] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const category = useAppStore((s) => s.filters.category)
 
@@ -95,12 +100,28 @@ export function StreamList({ initialConversations }: StreamListProps) {
     }
   }
 
-  const grouped = groupByDate(conversations)
+  const untitledCount = conversations.filter((c) => isUntitled(c.title)).length
+  const visibleConversations = showUntitled
+    ? conversations
+    : conversations.filter((c) => !isUntitled(c.title))
+  const grouped = groupByDate(visibleConversations)
 
   return (
     <div className="relative">
       {/* Timeline thread — subtle vertical line */}
       <div className="absolute left-[11px] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent md:left-[15px]" />
+
+      {/* Untitled toggle */}
+      {untitledCount > 0 && (
+        <div className="mb-4 ml-7 md:ml-10">
+          <button
+            onClick={() => setShowUntitled((prev) => !prev)}
+            className="text-[11px] text-muted/50 transition-colors hover:text-sub font-[family-name:var(--font-mono)]"
+          >
+            {showUntitled ? `Hide untitled (${untitledCount})` : `Show untitled (${untitledCount} hidden)`}
+          </button>
+        </div>
+      )}
 
       <div className="space-y-6">
         {grouped.map(([dateLabel, isoDate, items], groupIdx) => (
@@ -152,7 +173,7 @@ export function StreamList({ initialConversations }: StreamListProps) {
         </div>
       )}
 
-      {conversations.length === 0 && !loading && (
+      {visibleConversations.length === 0 && !loading && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <p className="font-[family-name:var(--font-serif)] text-2xl italic text-sub">
             No conversations yet
@@ -185,6 +206,7 @@ function groupByDate(conversations: readonly ConversationListItem[]): readonly [
       label = date.toLocaleDateString('en-US', { weekday: 'long' })
     } else {
       label = date.toLocaleDateString('en-US', {
+        weekday: 'long',
         month: 'long',
         day: 'numeric',
         year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,

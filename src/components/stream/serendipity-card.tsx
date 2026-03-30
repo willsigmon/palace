@@ -8,11 +8,26 @@ interface SerendipityCardProps {
   readonly data: SerendipityResponse
 }
 
+const SELF_NAMES = ['William Justin Sigmon', 'William Sigmon']
+
 export function SerendipityCard({ data }: SerendipityCardProps) {
-  if (data.connections.length === 0) return null
+  // Filter out connections that describe the user themselves
+  const filtered = data.connections.filter(
+    (c) => !SELF_NAMES.some((name) => c.description.includes(name)),
+  )
+
+  if (filtered.length === 0) return null
 
   // Pick one random connection to show as the daily card
-  const conn = data.connections[Math.floor(Math.random() * Math.min(data.connections.length, 5))]!
+  const conn = filtered[Math.floor(Math.random() * Math.min(filtered.length, 5))]!
+
+  // Collect unique non-null categories, capped at 5 with "+N more"
+  const allCategories = conn.conversations
+    .map((c) => c.category)
+    .filter((cat): cat is string => cat !== null && cat !== '')
+  const uniqueCategories = [...new Set(allCategories)]
+  const visibleCategories = uniqueCategories.slice(0, 5)
+  const hiddenCount = uniqueCategories.length - visibleCategories.length
 
   return (
     <div className="mb-6 rounded-xl border border-serendipity/15 bg-serendipity/[0.02] p-5">
@@ -41,6 +56,24 @@ export function SerendipityCard({ data }: SerendipityCardProps) {
               {truncate(c.title ?? 'Untitled', 45)}
             </Link>
           ))}
+        </div>
+      )}
+
+      {visibleCategories.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {visibleCategories.map((cat) => (
+            <span
+              key={cat}
+              className="rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-muted/50 bg-surface/20"
+            >
+              {cat}
+            </span>
+          ))}
+          {hiddenCount > 0 && (
+            <span className="rounded px-1.5 py-0.5 text-[9px] font-medium text-muted/40">
+              +{hiddenCount} more
+            </span>
+          )}
         </div>
       )}
     </div>

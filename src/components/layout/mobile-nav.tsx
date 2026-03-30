@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-// Mobile shows only 5 key tabs — People and Memories accessible via sidebar
+// Mobile shows only 5 key tabs — most-used destinations
 const MOBILE_NAV = [
   { id: 'stream', label: 'Stream', href: '/', icon: 'stream' },
   { id: 'people', label: 'People', href: '/people', icon: 'people' },
-  { id: 'search', label: 'Search', href: '/search', icon: 'search' },
-  { id: 'graph', label: 'Graph', href: '/graph', icon: 'graph' },
+  { id: 'ask', label: 'Ask', href: '/ask', icon: 'ask' },
+  { id: 'verticals', label: 'Verticals', href: '/verticals', icon: 'verticals' },
   { id: 'insights', label: 'Insights', href: '/insights', icon: 'insights' },
 ] as const
 
@@ -44,6 +44,19 @@ const ICONS: Record<string, React.ReactNode> = {
     <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
       <path d="M10 2v3M10 15v3M2 10h3M15 10h3" />
       <circle cx="10" cy="10" r="4" />
+    </svg>
+  ),
+  ask: (
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 5c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7l-4 3V5z" />
+      <path d="M10 7v.5M10 10.5h.01" strokeWidth="2" />
+    </svg>
+  ),
+  verticals: (
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="13" width="14" height="3" rx="1" />
+      <rect x="3" y="8.5" width="11" height="3" rx="1" />
+      <rect x="3" y="4" width="8" height="3" rx="1" />
     </svg>
   ),
 }

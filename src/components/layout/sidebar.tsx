@@ -46,6 +46,32 @@ const ICONS: Record<string, React.ReactNode> = {
       <circle cx="10" cy="10" r="4" />
     </svg>
   ),
+  ask: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 5c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7l-4 3V5z" />
+      <path d="M10 7v.5M10 10.5h.01" strokeWidth="2" />
+    </svg>
+  ),
+  verticals: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="13" width="14" height="3" rx="1" />
+      <rect x="3" y="8.5" width="11" height="3" rx="1" />
+      <rect x="3" y="4" width="8" height="3" rx="1" />
+    </svg>
+  ),
+  media: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="10" cy="10" r="7" />
+      <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  actions: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="4" width="5" height="5" rx="1" />
+      <path d="M9 6.5h7M9 13.5h7" />
+      <path d="M4 11.5l1.5 1.5L8 10" />
+    </svg>
+  ),
 }
 
 export function Sidebar() {
