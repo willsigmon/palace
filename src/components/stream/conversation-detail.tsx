@@ -409,7 +409,14 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
               )
             })
           ) : (
-            <p className="py-8 text-center text-sm italic text-muted">No transcript available</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <svg width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted/15 mb-3">
+                <rect x="8" y="8" width="32" height="32" rx="4" />
+                <path d="M16 20h16M16 28h10" strokeLinecap="round" />
+              </svg>
+              <p className="text-[13px] text-sub/60">No transcript available</p>
+              <p className="mt-1 text-[11px] text-muted/30">This conversation may not have been transcribed</p>
+            </div>
           )}
         </div>
       </section>

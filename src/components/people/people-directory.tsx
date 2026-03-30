@@ -289,10 +289,15 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
 
       {/* Empty state */}
       {grouped.length === 0 && !loading && (
-        <div className="py-16 text-center">
-          <p className="font-[family-name:var(--font-serif)] text-xl italic text-sub">
-            No people found
-          </p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted/15 mb-4">
+            <circle cx="18" cy="16" r="6" />
+            <path d="M6 38c0-5 4-9 12-9s12 4 12 9" />
+            <circle cx="34" cy="18" r="5" />
+            <path d="M34 26c5 0 8 3 8 7" strokeLinecap="round" />
+          </svg>
+          <p className="text-[15px] font-medium text-sub">No people found</p>
+          <p className="mt-1 text-[12px] text-muted/40">Try adjusting your search or filters</p>
         </div>
       )}
     </div>

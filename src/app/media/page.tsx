@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { formatRelativeTime, formatDuration, calcDuration, truncate } from '@/lib/format'
 
@@ -21,6 +21,13 @@ interface MediaMemory {
   category: string | null
   sourceApp: string | null
   createdAt: string
+}
+
+interface TmdbResult {
+  title: string
+  poster_url: string | null
+  vote_average: number | null
+  release_date: string | null
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
@@ -45,13 +52,21 @@ const TYPE_STYLES: Record<string, { icon: string; color: string; border: string 
   other: { icon: '📱', color: 'text-sub', border: 'border-l-border' },
 }
 
+// TMDb search type mapping
+const TMDB_TYPE: Record<string, string> = {
+  movie: 'movie', show: 'tv', music: 'multi', game: 'multi',
+  podcast: 'multi', video: 'multi',
+}
+
 export default function MediaPage() {
   const [sessions, setSessions] = useState<MediaSession[]>([])
   const [memories, setMemories] = useState<MediaMemory[]>([])
   const [stats, setStats] = useState<{ music: number; entertainment: number } | null>(null)
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
+  const [posters, setPosters] = useState<Record<string, TmdbResult | null>>({})
   const fetched = useRef(false)
+  const posterCache = useRef<Record<string, TmdbResult | null>>({})
 
   useEffect(() => {
     if (fetched.current) return
@@ -74,6 +89,39 @@ export default function MediaPage() {
       setLoading(false)
     }
   }
+
+  // Fetch TMDb posters for movie/show sessions
+  const fetchPoster = useCallback(async (title: string, mediaType: string) => {
+    const key = `${mediaType}:${title}`
+    if (posterCache.current[key] !== undefined) return
+    posterCache.current[key] = null // mark as fetching
+
+    const tmdbType = TMDB_TYPE[mediaType] || 'multi'
+    // Extract just the media name from conversation titles (often "Discussing X" or "Watching X")
+    const cleanTitle = title
+      .replace(/^(discussing|watching|listening to|playing|about)\s+/i, '')
+      .replace(/\s+(discussion|conversation|chat)$/i, '')
+      .trim()
+
+    try {
+      const res = await fetch(`${API_URL}/api/media/tmdb?query=${encodeURIComponent(cleanTitle)}&type=${tmdbType}`)
+      const data = await res.json()
+      if (data.results?.length > 0) {
+        const result = data.results[0]
+        posterCache.current[key] = result
+        setPosters(prev => ({ ...prev, [key]: result }))
+      }
+    } catch {}
+  }, [])
+
+  // Trigger poster fetches for visible sessions
+  useEffect(() => {
+    for (const s of sessions) {
+      if (s.media_type === 'movie' || s.media_type === 'show') {
+        fetchPoster(s.title, s.media_type)
+      }
+    }
+  }, [sessions, fetchPoster])
 
   return (
     <div className="mx-auto max-w-3xl px-[var(--space-page)] py-8">
@@ -125,6 +173,9 @@ export default function MediaPage() {
                 {sessions.map((s) => {
                   const style = TYPE_STYLES[s.media_type] ?? TYPE_STYLES.other
                   const duration = calcDuration(s.startedAt, s.finishedAt)
+                  const posterKey = `${s.media_type}:${s.title}`
+                  const poster = posters[posterKey]
+
                   return (
                     <Link
                       key={s.id}
@@ -132,7 +183,18 @@ export default function MediaPage() {
                       className={`group block rounded-xl border border-border/30 border-l-[3px] ${style.border} bg-surface/40 p-4 transition-all hover:bg-surface/60 hover:border-border/50`}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="mt-0.5 text-lg">{s.emoji || style.icon}</span>
+                        {/* Poster or emoji */}
+                        {poster?.poster_url ? (
+                          <img
+                            src={poster.poster_url}
+                            alt={poster.title}
+                            className="mt-0.5 h-16 w-11 shrink-0 rounded-md object-cover shadow-sm"
+                          />
+                        ) : (
+                          <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-elevated/40 text-lg">
+                            {s.emoji || style.icon}
+                          </span>
+                        )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`text-[9px] font-semibold uppercase tracking-widest ${style.color}`}>
@@ -141,6 +203,11 @@ export default function MediaPage() {
                             {duration && (
                               <span className="text-[10px] text-muted/40 font-[family-name:var(--font-mono)]">
                                 {formatDuration(duration)}
+                              </span>
+                            )}
+                            {poster?.vote_average && poster.vote_average > 0 && (
+                              <span className="text-[10px] text-amber-400/60 font-[family-name:var(--font-mono)]">
+                                ★ {poster.vote_average.toFixed(1)}
                               </span>
                             )}
                           </div>
