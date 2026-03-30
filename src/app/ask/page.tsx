@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Avatar } from '@/components/ui/avatar'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
 
@@ -135,16 +136,16 @@ function AskPageInner() {
         <div className="space-y-6">
           {/* Question */}
           <div className="flex gap-3">
-            <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">
-              W
+            <div className="mt-1 shrink-0">
+              <Avatar name="Will Sigmon" size="sm" />
             </div>
             <p className="pt-1 text-[14px] font-medium text-text">{response.question}</p>
           </div>
 
           {/* Answer */}
           <div className="flex gap-3">
-            <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-serendipity/15 text-[11px] font-bold text-serendipity">
-              P
+            <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full gradient-accent">
+              <span className="text-[10px] font-bold text-void font-[family-name:var(--font-serif)] italic">P</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[14px] leading-[1.8] text-text/90 whitespace-pre-wrap">

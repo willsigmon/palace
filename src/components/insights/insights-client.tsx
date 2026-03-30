@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { PatternsResponse, OnThisDayResponse, SerendipityResponse, DigestResponse } from '@/lib/api'
 import { formatNumber, formatRelativeTime, truncate } from '@/lib/format'
+import { Avatar } from '@/components/ui/avatar'
 
 interface InsightsClientProps {
   readonly patterns: PatternsResponse | null
@@ -67,8 +68,9 @@ function WeeklyDigest({ digest }: { digest: DigestResponse }) {
           <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted/60">People this week</p>
           <div className="flex flex-wrap gap-2">
             {digest.topPeople.map((p) => (
-              <span key={p.name} className="rounded-full bg-elevated/60 px-2.5 py-1 text-[11px] text-sub">
-                {p.name} <span className="text-muted/50">({p.count})</span>
+              <span key={p.name} className="inline-flex items-center gap-1.5 rounded-full bg-elevated/60 px-2 py-1 text-[11px] text-sub">
+                <Avatar name={p.name} size="sm" />
+                {p.name.split(' ')[0]} <span className="text-muted/50">({p.count})</span>
               </span>
             ))}
           </div>
@@ -199,7 +201,8 @@ function Patterns({ data }: { data: PatternsResponse }) {
           <div className="space-y-1.5">
             {data.topPeople.filter(p => p.name !== 'William Justin Sigmon').slice(0, 8).map((p) => (
               <div key={p.name} className="flex items-center gap-3">
-                <span className="w-28 text-[12px] text-text truncate">{p.name}</span>
+                <Avatar name={p.name} size="sm" />
+                <span className="w-24 text-[12px] text-text truncate">{p.name.split(' ')[0]}</span>
                 <div className="flex-1 h-2 rounded-full bg-elevated/40 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-pattern/40"
