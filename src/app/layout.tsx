@@ -9,6 +9,7 @@ import { AmbientBackground } from '@/components/layout/ambient-background'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { KeyboardNav } from '@/components/stream/keyboard-nav'
 import { RecordButton } from '@/components/recording/record-button'
+import { NativeInit } from '@/components/layout/native-init'
 
 const inter = Inter({
   variable: '--font-sans',
@@ -74,6 +75,7 @@ export default function RootLayout({
 
         <MobileNav />
         <RecordButton />
+        <NativeInit />
       </body>
     </html>
   )
