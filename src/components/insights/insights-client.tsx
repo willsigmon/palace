@@ -166,9 +166,9 @@ function Serendipity({ data }: { data: SerendipityResponse }) {
             </div>
             <p className="text-[12px] leading-relaxed text-sub/80">{conn.description}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {conn.conversations.slice(0, 3).map((c) => (
+              {conn.conversations.slice(0, 3).map((c, ci) => (
                 <Link
-                  key={c.id}
+                  key={`${c.id}-${ci}`}
                   href={`/conversation/${c.id}`}
                   className="rounded-md bg-elevated/40 px-2 py-1 text-[10px] text-muted hover:text-accent transition-colors"
                 >

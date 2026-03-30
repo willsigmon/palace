@@ -47,9 +47,9 @@ export function SerendipityCard({ data }: SerendipityCardProps) {
 
       {conn.conversations.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {conn.conversations.slice(0, 2).map((c) => (
+          {conn.conversations.slice(0, 2).map((c, i) => (
             <Link
-              key={c.id}
+              key={`${c.id}-${i}`}
               href={`/conversation/${c.id}`}
               className="rounded-md bg-serendipity/8 px-2.5 py-1 text-[11px] text-serendipity/60 transition-colors hover:bg-serendipity/15 hover:text-serendipity"
             >
