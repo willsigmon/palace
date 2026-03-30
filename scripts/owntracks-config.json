@@ -1,0 +1,11 @@
+{
+  "_type": "configuration",
+  "mode": 3,
+  "url": "https://api.wsig.me/api/owntracks",
+  "tid": "WS",
+  "monitoring": 1,
+  "locatorDisplacement": 100,
+  "locatorInterval": 300,
+  "positions": 50,
+  "cmd": true
+}
