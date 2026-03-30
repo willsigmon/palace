@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import type { ConversationDetail as ConversationDetailType, ConversationListItem, Memory } from '@/types/api'
 import { formatDate, formatTime, formatDuration, formatRelativeTime, calcDuration, truncate } from '@/lib/format'
+import { getEnrichment } from '@/lib/api'
 
 interface ConversationDetailProps {
   readonly detail: ConversationDetailType
@@ -24,6 +26,22 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   const { session, segments, speakerNames } = detail
   const title = session.title ?? 'Untitled Conversation'
   const duration = calcDuration(session.startedAt, session.finishedAt)
+
+  const [topicInfo, setTopicInfo] = useState<string | null>(null)
+  const [topicLoading, setTopicLoading] = useState(false)
+
+  const lookUpTopic = useCallback(async () => {
+    if (!session.title) return
+    setTopicLoading(true)
+    try {
+      const result = await getEnrichment(session.title, 'thing')
+      setTopicInfo(result.content)
+    } catch {
+      setTopicInfo('Could not look up this topic.')
+    } finally {
+      setTopicLoading(false)
+    }
+  }, [session.title])
 
   // Build speaker index for consistent coloring
   const speakerIndexMap = new Map<number, number>()
@@ -107,6 +125,41 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
           </h2>
           <p className="text-[13px] leading-[1.7] text-sub">{session.overview}</p>
         </section>
+      )}
+
+      {/* Topic enrichment */}
+      {session.title && session.title !== 'Untitled' && (
+        <div className="mb-6">
+          {topicInfo ? (
+            <div className="rounded-xl border border-serendipity/15 bg-serendipity/[0.02] p-5">
+              <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-serendipity/70">
+                Context
+              </h2>
+              <div className="text-[12px] leading-[1.7] text-sub/70 whitespace-pre-wrap">{topicInfo}</div>
+            </div>
+          ) : (
+            <button
+              onClick={lookUpTopic}
+              disabled={topicLoading}
+              className="flex items-center gap-2 rounded-lg bg-serendipity/8 px-3 py-1.5 text-[11px] font-medium text-serendipity/70 transition-colors hover:bg-serendipity/15 disabled:opacity-50"
+            >
+              {topicLoading ? (
+                <>
+                  <div className="h-3 w-3 animate-spin rounded-full border border-serendipity/30 border-t-serendipity" />
+                  Looking up...
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <circle cx="9" cy="9" r="5" />
+                    <path d="M13 13l4 4" />
+                  </svg>
+                  Look up topic with Perplexity
+                </>
+              )}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Speaker legend */}

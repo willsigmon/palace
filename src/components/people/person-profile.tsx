@@ -170,13 +170,14 @@ export function PersonProfile({ data }: PersonProfileProps) {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {targets.map((target) => (
-                    <span
+                    <Link
                       key={target}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-elevated px-3 py-1 text-xs text-text"
+                      href={`/people?q=${encodeURIComponent(target)}`}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-elevated px-3 py-1 text-xs text-text transition-colors hover:bg-accent/15 hover:text-accent"
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-accent-from" />
                       {target}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </div>
