@@ -12,6 +12,7 @@ import { RecordButton } from '@/components/recording/record-button'
 import { NativeInit } from '@/components/layout/native-init'
 import { KeyboardHelp } from '@/components/ui/keyboard-help'
 import { ToastContainer } from '@/components/ui/toast'
+import { ThemeToggle } from '@/components/layout/theme-toggle'
 
 const inter = Inter({
   variable: '--font-sans',
@@ -82,6 +83,7 @@ export default function RootLayout({
         <Sidebar />
         <SearchOverlay />
         <KeyboardNav />
+        <ThemeToggle />
 
         {/* Main content — offset for sidebar on desktop */}
         <main className="min-h-screen pb-20 md:pl-14 md:pb-0">
