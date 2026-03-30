@@ -25,14 +25,20 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
 
   return (
     <header className="mb-8">
-      {/* Title + subtitle */}
+      {/* Title + dynamic subtitle */}
       <div className="mb-5">
         <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-4xl)] italic text-text leading-tight">
           The Stream
         </h1>
-        <p className="mt-1.5 text-sm text-sub">
-          Your conversations, searchable and connected.
-        </p>
+        {stats ? (
+          <p className="mt-1.5 text-sm text-sub">
+            {formatNumber(stats.conversations)} conversations · {formatNumber(stats.memories)} memories · {formatNumber(stats.enrichment?.people ?? 0)} people
+          </p>
+        ) : (
+          <p className="mt-1.5 text-sm text-sub">
+            Your conversations, searchable and connected.
+          </p>
+        )}
       </div>
 
       {/* Search bar */}

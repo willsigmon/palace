@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { formatRelativeTime } from '@/lib/format'
 import type { PersonDetailResponse } from '@/lib/api'
-import { getEnrichment } from '@/lib/api'
+import { getEnrichment, getIdentityGraph } from '@/lib/api'
+import type { IdentityPerson } from '@/lib/api'
 import { Avatar } from '@/components/ui/avatar'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 
@@ -40,6 +41,17 @@ export function PersonProfile({ data }: PersonProfileProps) {
   const name = person.display_name ?? person.name
   const [enrichment, setEnrichment] = useState<string | null>(null)
   const [enrichLoading, setEnrichLoading] = useState(false)
+  const [identity, setIdentity] = useState<IdentityPerson | null>(null)
+
+  // Fetch identity stats (iMessage count, etc.)
+  useEffect(() => {
+    getIdentityGraph(200)
+      .then((data: { people: readonly IdentityPerson[] }) => {
+        const match = data.people.find(p => p.id === person.id)
+        if (match) setIdentity(match)
+      })
+      .catch(() => {})
+  }, [person.id])
 
   const lookUp = useCallback(async () => {
     setEnrichLoading(true)
@@ -98,6 +110,43 @@ export function PersonProfile({ data }: PersonProfileProps) {
               </span>
             )}
           </div>
+
+          {/* Stats row */}
+          {(identity || conversations.length > 0) && (
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px]">
+              {identity && identity.imessage_count > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-serendipity">
+                    <path d="M3 5c0-1.1.9-2 2-2h10a2 2 0 012 2v7a2 2 0 01-2 2H7l-4 3V5z" />
+                  </svg>
+                  <span className="font-[family-name:var(--font-mono)] text-sub">
+                    {identity.imessage_count.toLocaleString()} messages
+                  </span>
+                </div>
+              )}
+              {identity && identity.last_message_date && (
+                <div className="flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-muted/50">
+                    <circle cx="10" cy="10" r="7" />
+                    <path d="M10 6v4l3 2" />
+                  </svg>
+                  <span className="font-[family-name:var(--font-mono)] text-muted/60">
+                    last texted {new Date(identity.last_message_date).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+              {conversations.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-accent/60">
+                    <path d="M3 4h14M3 8h10M3 12h14" />
+                  </svg>
+                  <span className="font-[family-name:var(--font-mono)] text-muted/60">
+                    {conversations.length} conversations
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -167,9 +216,9 @@ export function PersonProfile({ data }: PersonProfileProps) {
                     <Link
                       key={target}
                       href={`/people?q=${encodeURIComponent(target)}`}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-elevated px-3 py-1 text-xs text-text transition-colors hover:bg-accent/15 hover:text-accent"
+                      className="inline-flex items-center gap-2 rounded-full bg-elevated px-2 py-1 text-xs text-text transition-colors hover:bg-accent/15 hover:text-accent"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-accent-from" />
+                      <Avatar name={target} size="sm" />
                       {target}
                     </Link>
                   ))}

@@ -185,12 +185,33 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick }: ForceGra
           }
         }) as any)
 
-    // Node circles
+    // Clip path for circular photos
+    const defs = g.append('defs')
+    finalNodes.forEach((d: any) => {
+      const r = d.node_id === centerNodeId ? 22 : 16
+      defs.append('clipPath')
+        .attr('id', `clip-${d.node_id.replace(/[^a-zA-Z0-9]/g, '_')}`)
+        .append('circle')
+        .attr('r', r)
+    })
+
+    // Node background circles (visible as border/fallback)
     node.append('circle')
       .attr('r', (d: any) => d.node_id === centerNodeId ? 22 : 16)
       .attr('fill', (d: any) => d.node_id === centerNodeId ? `color-mix(in oklch, ${accentColor} 20%, transparent)` : nodeFill)
       .attr('stroke', (d: any) => d.node_id === centerNodeId ? accentColor : nodeStroke)
       .attr('stroke-width', (d: any) => d.node_id === centerNodeId ? 2 : 1)
+
+    // Node photos (overlaid on circles, clipped to circle shape)
+    node.append('image')
+      .attr('href', (d: any) => `/photos/${(d.label as string).toLowerCase().replace(/\s+/g, '-')}.jpg`)
+      .attr('x', (d: any) => d.node_id === centerNodeId ? -22 : -16)
+      .attr('y', (d: any) => d.node_id === centerNodeId ? -22 : -16)
+      .attr('width', (d: any) => d.node_id === centerNodeId ? 44 : 32)
+      .attr('height', (d: any) => d.node_id === centerNodeId ? 44 : 32)
+      .attr('clip-path', (d: any) => `url(#clip-${d.node_id.replace(/[^a-zA-Z0-9]/g, '_')})`)
+      .attr('preserveAspectRatio', 'xMidYMid slice')
+      .on('error', function() { d3.select(this).remove() })
 
     // Node labels
     node.append('text')

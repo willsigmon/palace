@@ -383,30 +383,26 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
               const isLinkableSpeaker = !!segment.speakerName && segment.speakerName !== 'You'
 
               return (
-                <div key={i} className={`group flex gap-3 rounded-lg px-3 py-2 transition-colors hover:${style.bg}`}>
-                  {/* Speaker */}
-                  <div className="w-20 shrink-0 pt-0.5 text-right">
+                <div key={i} className={`group flex gap-3 rounded-lg px-3 py-2.5 transition-colors hover:${style.bg}`}>
+                  {/* Speaker avatar + name */}
+                  <div className="flex shrink-0 flex-col items-center gap-1 w-16 pt-0.5">
+                    <Avatar name={name} size="sm" />
                     {isLinkableSpeaker ? (
                       <Link
                         href={`/people?q=${encodeURIComponent(segment.speakerName!)}`}
-                        className={`text-[11px] font-medium ${style.text} hover:underline`}
+                        className={`text-[10px] font-medium ${style.text} hover:underline text-center leading-tight`}
                       >
-                        {name}
+                        {name.split(' ')[0]}
                       </Link>
                     ) : (
-                      <span className={`text-[11px] font-medium ${style.text}`}>
-                        {name}
+                      <span className={`text-[10px] font-medium ${style.text} text-center leading-tight`}>
+                        {name.split(' ')[0]}
                       </span>
                     )}
                   </div>
 
-                  {/* Divider dot */}
-                  <div className="mt-2 flex shrink-0">
-                    <span className={`h-1.5 w-1.5 rounded-full ${style.dot}/40`} />
-                  </div>
-
                   {/* Text */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 pt-0.5">
                     <p className="text-[13px] leading-[1.7] text-text/90">{highlightText(segment.text)}</p>
                   </div>
                 </div>
