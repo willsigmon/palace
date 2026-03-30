@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { ConversationDetail as ConversationDetailType, ConversationListItem, Memory } from '@/types/api'
 import { formatDate, formatTime, formatDuration, formatRelativeTime, calcDuration, truncate } from '@/lib/format'
 import { getEnrichment } from '@/lib/api'
@@ -28,10 +29,15 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   const { session, segments, speakerNames } = detail
   const title = session.title ?? 'Untitled Conversation'
   const duration = calcDuration(session.startedAt, session.finishedAt)
+  const router = useRouter()
 
   const [topicInfo, setTopicInfo] = useState<string | null>(null)
   const [topicLoading, setTopicLoading] = useState(false)
   const [transcriptSearch, setTranscriptSearch] = useState('')
+  const [copyFlash, setCopyFlash] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const lookUpTopic = useCallback(async () => {
     if (!session.title) return
@@ -45,6 +51,39 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
       setTopicLoading(false)
     }
   }, [session.title])
+
+  // Derived stats
+  const wordCount = segments.reduce((acc, seg) => acc + seg.text.split(/\s+/).filter(Boolean).length, 0)
+  const uniqueSpeakers = new Set(segments.map((s) => s.speaker)).size
+  const readMinutes = Math.max(1, Math.round(wordCount / 200))
+
+  const handleCopyTranscript = useCallback(async () => {
+    const text = segments
+      .map((seg) => {
+        const name = seg.speakerName ?? speakerNames[String(seg.speaker)] ?? (seg.isUser ? 'You' : (seg.speakerLabel ?? `Speaker ${seg.speaker}`))
+        return `${name}: ${seg.text}`
+      })
+      .join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      // fallback: do nothing silently
+    }
+    setCopyFlash(true)
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    copyTimerRef.current = setTimeout(() => setCopyFlash(false), 2000)
+  }, [segments, speakerNames])
+
+  const handleShare = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+    } catch {
+      // fallback: do nothing silently
+    }
+    setShareCopied(true)
+    if (shareTimerRef.current) clearTimeout(shareTimerRef.current)
+    shareTimerRef.current = setTimeout(() => setShareCopied(false), 2000)
+  }, [])
 
   // Build speaker index for consistent coloring
   const speakerIndexMap = new Map<number, number>()
@@ -110,23 +149,23 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   return (
     <article>
       {/* Back button */}
-      <Link
-        href="/"
+      <button
+        onClick={() => router.back()}
         className="mb-8 inline-flex items-center gap-2 text-[13px] text-muted transition-colors hover:text-text"
       >
         <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 4l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         Stream
-      </Link>
+      </button>
 
       {/* Header */}
-      <header className="mb-8">
+      <header className="group mb-8">
         <div className="flex items-start gap-3">
           {session.emoji && (
             <span className="mt-1 text-2xl">{session.emoji}</span>
           )}
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-2xl)] italic leading-tight text-text">
               {title}
             </h1>
@@ -134,12 +173,6 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
               <time dateTime={session.startedAt}>
                 {formatDate(session.startedAt)} at {formatTime(session.startedAt)}
               </time>
-              {duration && (
-                <>
-                  <span className="text-border">·</span>
-                  <span>{formatDuration(duration)}</span>
-                </>
-              )}
               {session.category && (
                 <>
                   <span className="text-border">·</span>
@@ -150,10 +183,54 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
               )}
               <span className="text-border">·</span>
               <span className="text-muted/60">{session.source}</span>
+
+              {/* Share button — visible on header hover */}
+              <button
+                onClick={handleShare}
+                className="ml-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted/40 opacity-0 transition-all group-hover:opacity-100 hover:text-muted hover:bg-elevated"
+                aria-label="Copy link"
+              >
+                {shareCopied ? (
+                  <span className="text-accent/70">Link copied!</span>
+                ) : (
+                  <>
+                    <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13 7H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2z" />
+                      <path d="M9 7V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-2" />
+                    </svg>
+                    Share
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Stats bar */}
+      <div className="mb-6 flex items-center gap-0 rounded-lg border border-border/20 bg-surface/10 text-[11px] font-[family-name:var(--font-mono)] text-muted/60 overflow-hidden">
+        <div className="flex flex-col items-center px-4 py-2.5 flex-1">
+          <span className="text-[15px] font-medium text-sub/80 tabular-nums">{wordCount.toLocaleString()}</span>
+          <span className="mt-0.5 text-[9px] uppercase tracking-widest">words</span>
+        </div>
+        <div className="w-px self-stretch bg-border/20" />
+        <div className="flex flex-col items-center px-4 py-2.5 flex-1">
+          <span className="text-[15px] font-medium text-sub/80 tabular-nums">{uniqueSpeakers}</span>
+          <span className="mt-0.5 text-[9px] uppercase tracking-widest">{uniqueSpeakers === 1 ? 'speaker' : 'speakers'}</span>
+        </div>
+        <div className="w-px self-stretch bg-border/20" />
+        <div className="flex flex-col items-center px-4 py-2.5 flex-1">
+          <span className="text-[15px] font-medium text-sub/80 tabular-nums">
+            {duration ? formatDuration(duration) : '—'}
+          </span>
+          <span className="mt-0.5 text-[9px] uppercase tracking-widest">duration</span>
+        </div>
+        <div className="w-px self-stretch bg-border/20" />
+        <div className="flex flex-col items-center px-4 py-2.5 flex-1">
+          <span className="text-[15px] font-medium text-sub/80 tabular-nums">{readMinutes}</span>
+          <span className="mt-0.5 text-[9px] uppercase tracking-widest">min read</span>
+        </div>
+      </div>
 
       {/* Location + Speaker Suggestions */}
       {speakerSuggestions?.location && (
@@ -274,6 +351,29 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
               placeholder="Search transcript…"
               className="w-36 rounded-lg border border-border/30 bg-surface/20 px-2.5 py-1 text-[11px] text-text placeholder:text-muted/40 outline-none transition-all focus:border-accent/40 focus:w-48"
             />
+            <div className="relative shrink-0">
+              <button
+                onClick={handleCopyTranscript}
+                title="Copy transcript"
+                className="flex items-center justify-center rounded-lg border border-border/30 bg-surface/20 p-1.5 text-muted/50 transition-colors hover:border-border/50 hover:text-muted"
+              >
+                {copyFlash ? (
+                  <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
+                    <path d="M4 10l5 5 7-8" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="7" y="4" width="10" height="13" rx="1.5" />
+                    <path d="M7 7H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3" />
+                  </svg>
+                )}
+              </button>
+              {copyFlash && (
+                <span className="pointer-events-none absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md bg-elevated px-2 py-1 text-[10px] text-accent/80 font-[family-name:var(--font-mono)] shadow-sm">
+                  Copied!
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -282,14 +382,24 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
             mergedSegments.map((segment, i) => {
               const style = getSpeakerStyle(segment.speaker)
               const name = getSpeakerName(segment)
+              const isLinkableSpeaker = !!segment.speakerName && segment.speakerName !== 'You'
 
               return (
                 <div key={i} className={`group flex gap-3 rounded-lg px-3 py-2 transition-colors hover:${style.bg}`}>
                   {/* Speaker */}
                   <div className="w-20 shrink-0 pt-0.5 text-right">
-                    <span className={`text-[11px] font-medium ${style.text}`}>
-                      {name}
-                    </span>
+                    {isLinkableSpeaker ? (
+                      <Link
+                        href={`/people?q=${encodeURIComponent(segment.speakerName!)}`}
+                        className={`text-[11px] font-medium ${style.text} hover:underline`}
+                      >
+                        {name}
+                      </Link>
+                    ) : (
+                      <span className={`text-[11px] font-medium ${style.text}`}>
+                        {name}
+                      </span>
+                    )}
                   </div>
 
                   {/* Divider dot */}
