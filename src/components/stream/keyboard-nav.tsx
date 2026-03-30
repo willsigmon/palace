@@ -62,6 +62,11 @@ export function KeyboardNav() {
           e.preventDefault()
           useAppStore.getState().openSearch()
           break
+        case 't':
+        case 'T':
+          e.preventDefault()
+          useAppStore.getState().cycleTheme()
+          break
       }
     }
 

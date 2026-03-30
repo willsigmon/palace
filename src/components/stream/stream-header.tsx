@@ -38,7 +38,7 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
       {/* Search bar */}
       <button
         onClick={openSearch}
-        className="group flex w-full items-center gap-3 rounded-xl border border-border/40 bg-surface/30 px-5 py-3.5 text-sm text-muted transition-all duration-250 hover:border-accent/30 hover:bg-surface/50 hover:shadow-[0_0_20px_oklch(0.73_0.20_30_/_0.06)]"
+        className="group flex w-full items-center gap-3 rounded-xl border border-border/40 bg-surface/30 px-5 py-3.5 text-sm text-muted transition-all duration-250 hover:border-accent/30 hover:bg-surface/50 hover:shadow-[0_0_20px_var(--color-glow)]"
       >
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted group-hover:text-accent transition-colors">
           <circle cx="9" cy="9" r="5" />

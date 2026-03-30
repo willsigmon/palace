@@ -14,6 +14,7 @@ const SHORTCUTS_LIST: readonly Shortcut[] = [
   { keys: ['/'], description: 'Focus search' },
   { keys: ['⌘', 'K'], description: 'Quick search' },
   { keys: ['Esc'], description: 'Close / dismiss' },
+  { keys: ['T'], description: 'Toggle theme' },
   { keys: ['?'], description: 'Show this help' },
 ]
 

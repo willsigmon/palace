@@ -1,10 +1,47 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAppStore } from '@/stores/app-store'
 import { NAV_ITEMS } from '@/lib/constants'
 import { ApiStatus } from './api-status'
+
+const THEME_ICONS = {
+  dark: (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M17.5 10.5a7.5 7.5 0 0 1-10-10 7.5 7.5 0 1 0 10 10z" />
+    </svg>
+  ),
+  light: (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="10" cy="10" r="4" />
+      <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" />
+    </svg>
+  ),
+  system: (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="14" height="10" rx="2" />
+      <path d="M7 17h6" />
+    </svg>
+  ),
+} as const
+
+function ThemeToggle({ expanded }: { expanded: boolean }) {
+  const { theme, cycleTheme } = useAppStore()
+  const label = theme === 'system' ? 'System' : theme === 'light' ? 'Light' : 'Dark'
+
+  return (
+    <button
+      onClick={cycleTheme}
+      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-muted transition-colors hover:bg-surface/40 hover:text-sub"
+      title={`Theme: ${label}`}
+    >
+      <span className="shrink-0">{THEME_ICONS[theme]}</span>
+      {expanded && <span className="text-[11px] font-medium">{label}</span>}
+    </button>
+  )
+}
 
 const ICONS: Record<string, React.ReactNode> = {
   stream: (
@@ -76,7 +113,13 @@ const ICONS: Record<string, React.ReactNode> = {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { sidebarExpanded, toggleSidebar } = useAppStore()
+  const { sidebarExpanded, toggleSidebar, initTheme } = useAppStore()
+
+  // Initialize theme on mount (reads localStorage, sets up system listener)
+  useEffect(() => {
+    const cleanup = initTheme()
+    return cleanup
+  }, [initTheme])
 
   return (
     <aside
@@ -135,8 +178,9 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer with API status */}
-      <div className="border-t border-border/30 px-3 py-2.5">
+      {/* Footer with theme toggle + API status */}
+      <div className="border-t border-border/30 px-3 py-2.5 space-y-2">
+        <ThemeToggle expanded={sidebarExpanded} />
         <ApiStatus expanded={sidebarExpanded} />
       </div>
     </aside>

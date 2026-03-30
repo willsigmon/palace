@@ -86,7 +86,7 @@ function AskPageInner() {
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && ask('')}
             placeholder="What would you like to know?"
-            className="w-full rounded-xl border border-border/40 bg-surface/30 py-4 pl-5 pr-24 text-base text-text placeholder:text-muted/50 outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_24px_oklch(0.73_0.20_30_/_0.08)]"
+            className="w-full rounded-xl border border-border/40 bg-surface/30 py-4 pl-5 pr-24 text-base text-text placeholder:text-muted/50 outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_24px_var(--color-glow)]"
             autoFocus
             disabled={loading}
           />

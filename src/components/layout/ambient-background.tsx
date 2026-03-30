@@ -3,6 +3,7 @@
 /**
  * Ambient background — drifting radial gradient orbs + paper grain
  * Creates the "warm noir living depth" atmosphere
+ * Colors adapt to theme via CSS custom properties
  */
 export function AmbientBackground() {
   return (
@@ -11,21 +12,21 @@ export function AmbientBackground() {
       <div
         className="absolute -top-[20%] -right-[10%] h-[60vh] w-[60vh] rounded-full animate-drift-1"
         style={{
-          background: 'radial-gradient(circle, oklch(0.30 0.08 30 / 0.15), transparent 70%)',
+          background: 'radial-gradient(circle, var(--color-orb-warm), transparent 70%)',
         }}
       />
       {/* Secondary cool orb — bottom left */}
       <div
         className="absolute -bottom-[15%] -left-[10%] h-[50vh] w-[50vh] rounded-full animate-drift-2"
         style={{
-          background: 'radial-gradient(circle, oklch(0.25 0.06 260 / 0.12), transparent 70%)',
+          background: 'radial-gradient(circle, var(--color-orb-cool), transparent 70%)',
         }}
       />
       {/* Accent orb — center */}
       <div
         className="absolute top-[40%] left-[50%] h-[40vh] w-[40vh] -translate-x-1/2 rounded-full animate-drift-3"
         style={{
-          background: 'radial-gradient(circle, oklch(0.25 0.05 350 / 0.08), transparent 70%)',
+          background: 'radial-gradient(circle, var(--color-orb-accent), transparent 70%)',
         }}
       />
 
@@ -39,7 +40,7 @@ export function AmbientBackground() {
       </svg>
 
       {/* Vignette overlay */}
-      <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 200px oklch(0 0 0 / 0.4)' }} />
+      <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 200px var(--color-vignette)' }} />
     </div>
   )
 }

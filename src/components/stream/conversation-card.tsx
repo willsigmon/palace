@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { ConversationListItem } from '@/types/api'
 import { formatRelativeTime, formatTime, formatDuration, calcDuration, truncate } from '@/lib/format'
+import { Avatar } from '@/components/ui/avatar'
 
 interface ConversationCardProps {
   readonly conversation: ConversationListItem & { source?: string }
@@ -132,10 +133,10 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
         {people.slice(0, 3).map((person) => (
           <span
             key={person}
-            className="inline-flex items-center gap-1 rounded-full bg-elevated/60 px-2 py-0.5 text-[11px] text-sub"
+            className="inline-flex items-center gap-1.5 rounded-full bg-elevated/60 px-1.5 py-0.5 text-[11px] text-sub"
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${colors.text.replace('text-', 'bg-')}/60`} />
-            {person}
+            <Avatar name={person} size="sm" />
+            {person.split(' ')[0]}
           </span>
         ))}
         {people.length > 3 && (

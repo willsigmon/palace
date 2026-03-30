@@ -11,6 +11,7 @@ import { KeyboardNav } from '@/components/stream/keyboard-nav'
 import { RecordButton } from '@/components/recording/record-button'
 import { NativeInit } from '@/components/layout/native-init'
 import { KeyboardHelp } from '@/components/ui/keyboard-help'
+import { ToastContainer } from '@/components/ui/toast'
 
 const inter = Inter({
   variable: '--font-sans',
@@ -66,7 +67,16 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${instrumentSerif.variable} ${geistMono.variable} h-full`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Flash-prevention: apply theme class before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('palace-theme');var r=t==='light'?'light':t==='system'&&window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';if(r==='light')document.documentElement.classList.add('light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',r==='light'?'#f5f0e8':'#1a1a2e')}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="min-h-full">
         <AmbientBackground />
         <Sidebar />
@@ -84,6 +94,7 @@ export default function RootLayout({
         <RecordButton />
         <NativeInit />
         <KeyboardHelp />
+        <ToastContainer />
       </body>
     </html>
   )

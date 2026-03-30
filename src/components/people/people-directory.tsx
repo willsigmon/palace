@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Person } from '@/types/api'
 import { getPeople } from '@/lib/api'
+import { Avatar } from '@/components/ui/avatar'
 
 interface PeopleDirectoryProps {
   readonly initialPeople: readonly Person[]
@@ -229,9 +230,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
                     className="group flex items-center gap-3 rounded-lg border border-border/30 bg-surface/40 p-3 transition-all duration-200 hover:border-border hover:bg-surface"
                   >
                     {/* Avatar */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-elevated text-sm font-medium text-sub group-hover:text-accent transition-colors">
-                      {getInitials(name)}
-                    </div>
+                    <Avatar name={name} size="lg" />
 
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-text group-hover:text-accent transition-colors">

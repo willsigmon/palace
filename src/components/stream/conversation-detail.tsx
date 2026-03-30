@@ -2,11 +2,13 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import type { ConversationDetail as ConversationDetailType, ConversationListItem, Memory } from '@/types/api'
 import { formatDate, formatTime, formatDuration, formatRelativeTime, calcDuration, truncate } from '@/lib/format'
 import { getEnrichment } from '@/lib/api'
 import type { SpeakerSuggestionsResponse } from '@/lib/api'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { Avatar } from '@/components/ui/avatar'
+import { useToast } from '@/components/ui/toast'
 
 interface ConversationDetailProps {
   readonly detail: ConversationDetailType
@@ -29,22 +31,15 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   const { session, segments, speakerNames } = detail
   const title = session.title ?? 'Untitled Conversation'
   const duration = calcDuration(session.startedAt, session.finishedAt)
-  const router = useRouter()
-
   const [topicInfo, setTopicInfo] = useState<string | null>(null)
   const [topicLoading, setTopicLoading] = useState(false)
   const [transcriptSearch, setTranscriptSearch] = useState('')
-  const [copyFlash, setCopyFlash] = useState(false)
-  const [shareCopied, setShareCopied] = useState(false)
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { addToast } = useToast()
 
   // Notes state
   const NOTES_KEY = `palace-note-${session.id}`
   const [notes, setNotes] = useState('')
-  const [notesSaved, setNotesSaved] = useState(false)
   const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const notesSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem(NOTES_KEY)
@@ -53,10 +48,8 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
 
   const saveNotes = useCallback((value: string) => {
     localStorage.setItem(NOTES_KEY, value)
-    setNotesSaved(true)
-    if (notesSavedTimerRef.current) clearTimeout(notesSavedTimerRef.current)
-    notesSavedTimerRef.current = setTimeout(() => setNotesSaved(false), 2000)
-  }, [NOTES_KEY])
+    addToast('Notes saved', 'info')
+  }, [NOTES_KEY, addToast])
 
   const handleNotesChange = useCallback((value: string) => {
     setNotes(value)
@@ -96,24 +89,20 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
       .join('\n')
     try {
       await navigator.clipboard.writeText(text)
+      addToast('Transcript copied to clipboard')
     } catch {
-      // fallback: do nothing silently
+      addToast('Failed to copy', 'error')
     }
-    setCopyFlash(true)
-    if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
-    copyTimerRef.current = setTimeout(() => setCopyFlash(false), 2000)
-  }, [segments, speakerNames])
+  }, [segments, speakerNames, addToast])
 
   const handleShare = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(window.location.href)
+      addToast('Link copied')
     } catch {
-      // fallback: do nothing silently
+      addToast('Failed to copy link', 'error')
     }
-    setShareCopied(true)
-    if (shareTimerRef.current) clearTimeout(shareTimerRef.current)
-    shareTimerRef.current = setTimeout(() => setShareCopied(false), 2000)
-  }, [])
+  }, [addToast])
 
   // Build speaker index for consistent coloring
   const speakerIndexMap = new Map<number, number>()
@@ -179,15 +168,11 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   return (
     <article>
       {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="mb-8 inline-flex items-center gap-2 text-[13px] text-muted transition-colors hover:text-text"
-      >
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 4l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Stream
-      </button>
+      <Breadcrumb items={[
+        { label: 'Stream', href: '/' },
+        ...(session.category ? [{ label: session.category, href: `/?category=${session.category}` }] : []),
+        { label: truncate(title, 40) },
+      ]} />
 
       {/* Header */}
       <header className="group mb-8">
@@ -220,17 +205,11 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
                 className="ml-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted/40 opacity-0 transition-all group-hover:opacity-100 hover:text-muted hover:bg-elevated"
                 aria-label="Copy link"
               >
-                {shareCopied ? (
-                  <span className="text-accent/70">Link copied!</span>
-                ) : (
-                  <>
-                    <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13 7H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2z" />
-                      <path d="M9 7V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-2" />
-                    </svg>
-                    Share
-                  </>
-                )}
+                <svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13 7H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V9a2 2 0 00-2-2z" />
+                  <path d="M9 7V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-2" />
+                </svg>
+                Share
               </button>
             </div>
           </div>
@@ -387,22 +366,11 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
                 title="Copy transcript"
                 className="flex items-center justify-center rounded-lg border border-border/30 bg-surface/20 p-1.5 text-muted/50 transition-colors hover:border-border/50 hover:text-muted"
               >
-                {copyFlash ? (
-                  <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
-                    <path d="M4 10l5 5 7-8" />
-                  </svg>
-                ) : (
-                  <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="7" y="4" width="10" height="13" rx="1.5" />
-                    <path d="M7 7H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3" />
-                  </svg>
-                )}
+                <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="7" y="4" width="10" height="13" rx="1.5" />
+                  <path d="M7 7H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-3" />
+                </svg>
               </button>
-              {copyFlash && (
-                <span className="pointer-events-none absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md bg-elevated px-2 py-1 text-[10px] text-accent/80 font-[family-name:var(--font-mono)] shadow-sm">
-                  Copied!
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -456,11 +424,6 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
           <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted/60">
             Notes
           </h2>
-          {notesSaved && (
-            <span className="text-[10px] font-[family-name:var(--font-mono)] text-accent/60 transition-opacity">
-              Saved
-            </span>
-          )}
         </div>
         <textarea
           value={notes}

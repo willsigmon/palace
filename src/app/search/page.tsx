@@ -68,7 +68,7 @@ export default function SearchPage() {
             value={query}
             onChange={(e) => handleInput(e.target.value)}
             placeholder="What are you looking for?"
-            className="w-full rounded-xl border border-border/40 bg-surface/30 py-4 pl-12 pr-4 text-base text-text placeholder:text-muted/60 outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_24px_oklch(0.73_0.20_30_/_0.08)]"
+            className="w-full rounded-xl border border-border/40 bg-surface/30 py-4 pl-12 pr-4 text-base text-text placeholder:text-muted/60 outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_24px_var(--color-glow)]"
             autoFocus
           />
         </div>

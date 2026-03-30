@@ -67,6 +67,14 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick }: ForceGra
 
     const { width, height } = dimensions
 
+    // Read theme-aware colors from CSS custom properties
+    const cs = getComputedStyle(document.documentElement)
+    const nodeFill = cs.getPropertyValue('--color-node-fill').trim() || 'oklch(0.21 0.02 260)'
+    const nodeStroke = cs.getPropertyValue('--color-node-stroke').trim() || 'oklch(0.35 0.015 260)'
+    const nodeLabel = cs.getPropertyValue('--color-node-label').trim() || 'oklch(0.75 0.01 80)'
+    const nodeSublabel = cs.getPropertyValue('--color-node-sublabel').trim() || 'oklch(0.45 0.01 260)'
+    const accentColor = cs.getPropertyValue('--color-accent').trim() || 'oklch(0.73 0.20 30)'
+
     // Clear previous
     d3.select(svg).selectAll('*').remove()
 
@@ -180,15 +188,15 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick }: ForceGra
     // Node circles
     node.append('circle')
       .attr('r', (d: any) => d.node_id === centerNodeId ? 22 : 16)
-      .attr('fill', (d: any) => d.node_id === centerNodeId ? 'oklch(0.73 0.20 30 / 0.2)' : 'oklch(0.21 0.02 260)')
-      .attr('stroke', (d: any) => d.node_id === centerNodeId ? 'oklch(0.73 0.20 30)' : 'oklch(0.35 0.015 260)')
+      .attr('fill', (d: any) => d.node_id === centerNodeId ? `color-mix(in oklch, ${accentColor} 20%, transparent)` : nodeFill)
+      .attr('stroke', (d: any) => d.node_id === centerNodeId ? accentColor : nodeStroke)
       .attr('stroke-width', (d: any) => d.node_id === centerNodeId ? 2 : 1)
 
     // Node labels
     node.append('text')
       .attr('text-anchor', 'middle')
       .attr('dy', (d: any) => d.node_id === centerNodeId ? 36 : 28)
-      .attr('fill', 'oklch(0.75 0.01 80)')
+      .attr('fill', nodeLabel)
       .attr('font-size', (d: any) => d.node_id === centerNodeId ? '11px' : '9px')
       .attr('font-weight', (d: any) => d.node_id === centerNodeId ? '600' : '400')
       .text((d: any) => {
@@ -200,7 +208,7 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick }: ForceGra
     node.append('text')
       .attr('text-anchor', 'middle')
       .attr('dy', (d: any) => d.node_id === centerNodeId ? 48 : 38)
-      .attr('fill', 'oklch(0.45 0.01 260)')
+      .attr('fill', nodeSublabel)
       .attr('font-size', '8px')
       .attr('font-family', 'var(--font-mono)')
       .text((d: any) => {
@@ -219,14 +227,14 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick }: ForceGra
       setHoveredNode(d.node_id)
       d3.select(event.currentTarget as SVGGElement).select('circle')
         .transition().duration(200)
-        .attr('stroke', 'oklch(0.73 0.20 30)')
+        .attr('stroke', accentColor)
         .attr('stroke-width', 2)
     })
     node.on('mouseleave', (event: MouseEvent, d: any) => {
       setHoveredNode(null)
       d3.select(event.currentTarget as SVGGElement).select('circle')
         .transition().duration(200)
-        .attr('stroke', d.node_id === centerNodeId ? 'oklch(0.73 0.20 30)' : 'oklch(0.35 0.015 260)')
+        .attr('stroke', d.node_id === centerNodeId ? accentColor : nodeStroke)
         .attr('stroke-width', d.node_id === centerNodeId ? 2 : 1)
     })
 
