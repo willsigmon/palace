@@ -340,6 +340,29 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
         </div>
       )}
 
+      {/* Speaker legend */}
+      {uniqueSpeakers > 1 && (
+        <section className="mb-6 rounded-xl border border-border/20 bg-surface/10 p-4">
+          <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted/40">
+            Speakers in this conversation
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {Array.from(speakerIndexMap.entries()).map(([speakerId, idx]) => {
+              const seg = segments.find(s => s.speaker === speakerId)
+              if (!seg) return null
+              const name = getSpeakerName(seg)
+              const style = SPEAKER_PALETTE[idx % SPEAKER_PALETTE.length]!
+              return (
+                <div key={speakerId} className="flex items-center gap-2 rounded-lg bg-elevated/30 px-3 py-1.5">
+                  <Avatar name={name} size="sm" />
+                  <span className={`text-[12px] font-medium ${style.text}`}>{name}</span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Transcript */}
       <section>
         <div className="mb-4 flex items-center justify-between gap-4">
