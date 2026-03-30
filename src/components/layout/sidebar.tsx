@@ -102,6 +102,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M8.5 7.5l5 2.5-5 2.5V7.5z" fill="currentColor" stroke="none" />
     </svg>
   ),
+  locations: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 17s-6-4.35-6-8.5a6 6 0 1 1 12 0C16 12.65 10 17 10 17z" />
+      <circle cx="10" cy="8.5" r="2" />
+    </svg>
+  ),
   actions: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="4" y="4" width="5" height="5" rx="1" />

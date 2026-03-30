@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   { id: 'ask', label: 'Ask', href: '/ask', icon: 'ask' },
   { id: 'verticals', label: 'Verticals', href: '/verticals', icon: 'verticals' },
   { id: 'media', label: 'Media', href: '/media', icon: 'media' },
+  { id: 'locations', label: 'Locations', href: '/locations', icon: 'locations' },
   { id: 'actions', label: 'Actions', href: '/actions', icon: 'actions' },
 ] as const
 
