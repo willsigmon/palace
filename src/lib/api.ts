@@ -292,4 +292,35 @@ export interface SpeakerSuggestionsResponse {
   }[]
 }
 
+// ── Identity Resolution ──
+
+export interface IdentityPerson {
+  readonly id: number
+  readonly name: string
+  readonly display_name: string | null
+  readonly relationship: string | null
+  readonly phone: string | null
+  readonly email: string | null
+  readonly birthday: string | null
+  readonly gedcom_id: string | null
+  readonly imessage_count: number
+  readonly last_message_date: string | null
+  readonly conversation_count: number
+  readonly photo_path: string | null
+  readonly contact_nickname: string | null
+}
+
+export interface IdentityGraphResponse {
+  readonly people: readonly IdentityPerson[]
+  readonly stats: {
+    readonly total_people: number
+    readonly mapped_conversations: number
+    readonly imessage_linked: number
+  }
+}
+
+export function getIdentityGraph(limit = 50) {
+  return request<IdentityGraphResponse>(`/api/identity/graph`, { limit })
+}
+
 export { ApiError }

@@ -1,17 +1,18 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Person } from '@/types/api'
-import { getPeople } from '@/lib/api'
+import { getPeople, getIdentityGraph } from '@/lib/api'
+import type { IdentityPerson } from '@/lib/api'
 import { Avatar } from '@/components/ui/avatar'
 
 interface PeopleDirectoryProps {
   readonly initialPeople: readonly Person[]
 }
 
-type SortMode = 'alpha' | 'conversations'
+type SortMode = 'alpha' | 'conversations' | 'closest'
 
 const RELATIONSHIP_FILTERS = [
   { value: '', label: 'All' },
@@ -46,7 +47,16 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
   const [query, setQuery] = useState('')
   const [relationship, setRelationship] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sortMode, setSortMode] = useState<SortMode>('alpha')
+  const [sortMode, setSortMode] = useState<SortMode>('closest')
+  const [identityPeople, setIdentityPeople] = useState<readonly IdentityPerson[]>([])
+  const identityFetched = useRef(false)
+
+  // Fetch identity graph for closeness sort
+  useEffect(() => {
+    if (identityFetched.current) return
+    identityFetched.current = true
+    getIdentityGraph(200).then((data: { people: readonly IdentityPerson[] }) => setIdentityPeople(data.people)).catch(() => {})
+  }, [])
 
   // Auto-populate and trigger search from ?q= URL param on mount
   useEffect(() => {
@@ -107,6 +117,26 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
       return true
     })
 
+    if (sortMode === 'closest' && identityPeople.length > 0) {
+      // Use identity graph data — sorted by combined iMessage + conversation signal
+      const idPeople: Person[] = identityPeople
+        .filter(ip => {
+          const name = ip.display_name ?? ip.name
+          if (name.startsWith('+')) return false
+          if (/^\d/.test(name) && phonePattern.test(name)) return false
+          return (ip.imessage_count > 0 || ip.conversation_count > 0)
+        })
+        .map(ip => ({
+          id: ip.id, name: ip.name, display_name: ip.display_name,
+          relationship: ip.relationship, phone: ip.phone, email: ip.email,
+          birthday: ip.birthday, gedcom_id: ip.gedcom_id, clay_contact_id: null,
+          conversation_count: ip.conversation_count,
+          imessage_count: ip.imessage_count,
+          last_message_date: ip.last_message_date,
+        }) as Person & { imessage_count?: number; last_message_date?: string | null })
+      return [['—', idPeople]] as [string, (Person & { imessage_count?: number; last_message_date?: string | null })[]][]
+    }
+
     if (sortMode === 'conversations') {
       const sorted = [...filtered].sort((a, b) => {
         const ca = a.conversation_count ?? 0
@@ -129,7 +159,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
       }
     }
     return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b))
-  }, [people, sortMode])
+  }, [people, sortMode, identityPeople])
 
   const totalShown = grouped.reduce((sum, [, items]) => sum + items.length, 0)
 
@@ -181,22 +211,17 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
         </div>
 
         <div className="flex items-center gap-1 border-l border-border/30 pl-3">
-          <button
-            onClick={() => setSortMode('alpha')}
-            className={`px-2 py-1 text-xs font-medium transition-colors ${
-              sortMode === 'alpha' ? 'text-accent' : 'text-sub hover:text-text'
-            }`}
-          >
-            A-Z
-          </button>
-          <button
-            onClick={() => setSortMode('conversations')}
-            className={`px-2 py-1 text-xs font-medium transition-colors ${
-              sortMode === 'conversations' ? 'text-accent' : 'text-sub hover:text-text'
-            }`}
-          >
-            Most conversations
-          </button>
+          {(['closest', 'alpha', 'conversations'] as const).map(mode => (
+            <button
+              key={mode}
+              onClick={() => setSortMode(mode)}
+              className={`px-2 py-1 text-xs font-medium transition-colors ${
+                sortMode === mode ? 'text-accent' : 'text-sub hover:text-text'
+              }`}
+            >
+              {mode === 'closest' ? 'Closest' : mode === 'alpha' ? 'A-Z' : 'Convos'}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -245,6 +270,11 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
                         {person.birthday && (
                           <span className="text-[10px] text-muted truncate">
                             b. {person.birthday}
+                          </span>
+                        )}
+                        {(person as any).imessage_count > 0 && (
+                          <span className="text-[10px] text-muted/50 font-[family-name:var(--font-mono)]">
+                            {((person as any).imessage_count as number).toLocaleString()} msgs
                           </span>
                         )}
                       </div>
