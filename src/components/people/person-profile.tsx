@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { formatRelativeTime } from '@/lib/format'
 import type { PersonDetailResponse } from '@/lib/api'
 import { getEnrichment } from '@/lib/api'
+import { Avatar } from '@/components/ui/avatar'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 
 interface PersonProfileProps {
   readonly data: PersonDetailResponse
@@ -67,22 +69,14 @@ export function PersonProfile({ data }: PersonProfileProps) {
 
   return (
     <article>
-      {/* Back */}
-      <Link
-        href="/people"
-        className="mb-6 inline-flex items-center gap-2 text-sm text-sub transition-colors hover:text-text"
-      >
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M12 4l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Back to People
-      </Link>
+      <Breadcrumb items={[
+        { label: 'People', href: '/people' },
+        { label: name },
+      ]} />
 
       {/* Header */}
       <header className="mb-8 flex items-start gap-5">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-elevated text-xl font-medium text-accent">
-          {getInitials(name)}
-        </div>
+        <Avatar name={name} size="xl" />
         <div>
           <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-2xl)] italic text-text">
             {name}
