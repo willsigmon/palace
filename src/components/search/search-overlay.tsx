@@ -7,6 +7,7 @@ import { search } from '@/lib/api'
 import type { SearchResponse } from '@/types/api'
 import { formatRelativeTime, truncate } from '@/lib/format'
 import { SHORTCUTS } from '@/lib/constants'
+import { Avatar } from '@/components/ui/avatar'
 
 interface FlatResult {
   readonly type: 'conversation' | 'memory' | 'action_item' | 'person' | 'limitless'
@@ -222,9 +223,13 @@ export function SearchOverlay() {
                     ${i === selectedIndex ? 'bg-elevated' : 'hover:bg-elevated/50'}
                   `}
                 >
-                  <span className={`mt-0.5 text-[10px] font-medium uppercase tracking-wider ${TYPE_COLORS[result.type] ?? 'text-sub'}`}>
-                    {TYPE_LABELS[result.type] ?? result.type}
-                  </span>
+                  {result.type === 'person' ? (
+                    <Avatar name={result.title} size="sm" />
+                  ) : (
+                    <span className={`mt-0.5 text-[10px] font-medium uppercase tracking-wider ${TYPE_COLORS[result.type] ?? 'text-sub'}`}>
+                      {TYPE_LABELS[result.type] ?? result.type}
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-text">
                       {truncate(result.title, 60)}
