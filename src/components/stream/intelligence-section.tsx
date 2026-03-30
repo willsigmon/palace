@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { DigestResponse, OnThisDayResponse, SerendipityResponse } from '@/lib/api'
+import { getSerendipity } from '@/lib/api'
 import { WeeklyPulse } from './weekly-pulse'
 import { OnThisDayCard } from './on-this-day-card'
 import { SerendipityCard } from './serendipity-card'
@@ -9,11 +10,20 @@ import { SerendipityCard } from './serendipity-card'
 interface IntelligenceSectionProps {
   readonly digest: DigestResponse | null
   readonly onThisDay: OnThisDayResponse | null
-  readonly serendipity: SerendipityResponse | null
+  readonly serendipity?: SerendipityResponse | null
 }
 
-export function IntelligenceSection({ digest, onThisDay, serendipity }: IntelligenceSectionProps) {
+export function IntelligenceSection({ digest, onThisDay }: IntelligenceSectionProps) {
   const [expanded, setExpanded] = useState(true)
+  const [serendipity, setSerendipity] = useState<SerendipityResponse | null>(null)
+  const fetched = useRef(false)
+
+  // Fetch serendipity client-side to avoid hydration mismatch (random API results)
+  useEffect(() => {
+    if (fetched.current) return
+    fetched.current = true
+    getSerendipity().then(setSerendipity).catch(() => {})
+  }, [])
 
   const hasContent = digest !== null || onThisDay !== null || serendipity !== null
   if (!hasContent) return null
