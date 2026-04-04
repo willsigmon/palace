@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, Suspense } from 'react'
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Avatar } from '@/components/ui/avatar'
@@ -26,13 +26,77 @@ const EXAMPLE_QUESTIONS = [
   "What happened last Tuesday?",
 ]
 
+const CHARS_PER_FRAME = 2
+const FRAME_INTERVAL = 16 // ~60fps
+
+/**
+ * Typewriter hook — reveals text character by character
+ */
+function useTypewriter(fullText: string, active: boolean) {
+  const [revealed, setRevealed] = useState('')
+  const [done, setDone] = useState(false)
+  const rafRef = useRef<number>(0)
+  const indexRef = useRef(0)
+  const lastTimeRef = useRef(0)
+
+  useEffect(() => {
+    if (!active || !fullText) {
+      setRevealed(active ? '' : fullText)
+      setDone(!active)
+      indexRef.current = 0
+      return
+    }
+
+    setRevealed('')
+    setDone(false)
+    indexRef.current = 0
+    lastTimeRef.current = 0
+
+    function step(timestamp: number) {
+      if (timestamp - lastTimeRef.current >= FRAME_INTERVAL) {
+        lastTimeRef.current = timestamp
+        indexRef.current = Math.min(indexRef.current + CHARS_PER_FRAME, fullText.length)
+        setRevealed(fullText.slice(0, indexRef.current))
+
+        if (indexRef.current >= fullText.length) {
+          setDone(true)
+          return
+        }
+      }
+      rafRef.current = requestAnimationFrame(step)
+    }
+
+    rafRef.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [fullText, active])
+
+  const skip = useCallback(() => {
+    cancelAnimationFrame(rafRef.current)
+    setRevealed(fullText)
+    setDone(true)
+  }, [fullText])
+
+  return { revealed, done, skip }
+}
+
 function AskPageInner() {
   const searchParams = useSearchParams()
   const [question, setQuestion] = useState('')
   const [response, setResponse] = useState<AskResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [typing, setTyping] = useState(false)
   const [history, setHistory] = useState<AskResponse[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const { revealed, done, skip } = useTypewriter(
+    response?.answer ?? '',
+    typing,
+  )
+
+  // When typing finishes, stop the typewriter state
+  useEffect(() => {
+    if (done && typing) setTyping(false)
+  }, [done, typing])
 
   useEffect(() => {
     const q = searchParams.get('q')
@@ -40,7 +104,6 @@ function AskPageInner() {
       setQuestion(q)
       ask(q)
     }
-    // Only run on mount — ask is stable within this render cycle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -49,6 +112,7 @@ function AskPageInner() {
     if (!query.trim()) return
     setLoading(true)
     setResponse(null)
+    setTyping(false)
 
     try {
       const res = await fetch(`${API_URL}/api/ask`, {
@@ -59,8 +123,11 @@ function AskPageInner() {
       const data: AskResponse = await res.json()
       setResponse(data)
       setHistory((prev) => [data, ...prev].slice(0, 10))
+      setTyping(true)
     } catch {
-      setResponse({ question: query, answer: 'Failed to reach PALACE. Check API connection.', sources: { conversations: [], memories: 0, people: [] } })
+      const errResponse = { question: query, answer: 'Failed to reach PALACE. Check API connection.', sources: { conversations: [], memories: 0, people: [] } }
+      setResponse(errResponse)
+      setTyping(false)
     } finally {
       setLoading(false)
     }
@@ -70,7 +137,7 @@ function AskPageInner() {
     <div className="mx-auto max-w-3xl px-[var(--space-page)] py-8">
       <header className="mb-8">
         <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text">
-          Ask PALACE
+          The Oracle
         </h1>
         <p className="mt-1.5 text-sm text-sub">
           Ask anything about your life. Powered by your conversations, memories, and relationships.
@@ -123,15 +190,17 @@ function AskPageInner() {
         </div>
       )}
 
-      {/* Loading */}
+      {/* Loading — pulsing oracle avatar */}
       {loading && (
         <div className="flex items-center gap-3 py-8">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent/30 border-t-accent" />
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full gradient-accent animate-pulse">
+            <span className="text-[10px] font-bold text-void font-[family-name:var(--font-serif)] italic">P</span>
+          </div>
           <span className="text-sm text-sub">Searching your memories...</span>
         </div>
       )}
 
-      {/* Response */}
+      {/* Response with typewriter effect */}
       {response && !loading && (
         <div className="space-y-6">
           {/* Question */}
@@ -142,19 +211,26 @@ function AskPageInner() {
             <p className="pt-1 text-[14px] font-medium text-text">{response.question}</p>
           </div>
 
-          {/* Answer */}
+          {/* Answer — typewriter reveal */}
           <div className="flex gap-3">
             <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full gradient-accent">
               <span className="text-[10px] font-bold text-void font-[family-name:var(--font-serif)] italic">P</span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] leading-[1.8] text-text/90 whitespace-pre-wrap">
-                {response.answer}
+              <div
+                className="text-[14px] leading-[1.8] text-text/90 whitespace-pre-wrap cursor-pointer"
+                onClick={typing ? skip : undefined}
+                title={typing ? 'Click to skip animation' : undefined}
+              >
+                {revealed}
+                {typing && <span className="inline-block w-[2px] h-[1em] bg-accent/70 ml-0.5 align-text-bottom animate-pulse" />}
               </div>
 
-              {/* Sources */}
-              {(response.sources.conversations.length > 0 || response.sources.memories > 0 || response.sources.people.length > 0) && (
-                <div className="mt-4 rounded-lg border border-border/20 bg-surface/20 p-3">
+              {/* Sources — fade in after typewriter completes */}
+              {done && (response.sources.conversations.length > 0 || response.sources.memories > 0 || response.sources.people.length > 0) && (
+                <div
+                  className="mt-4 rounded-lg border border-border/20 bg-surface/20 p-3 animate-fade-in"
+                >
                   <p className="mb-2 text-[9px] font-medium uppercase tracking-widest text-muted/40">Sources</p>
                   <div className="flex flex-wrap gap-1.5">
                     {response.sources.conversations.map((c) => (
@@ -183,12 +259,14 @@ function AskPageInner() {
           </div>
 
           {/* Follow-up */}
-          <button
-            onClick={() => { setResponse(null); setQuestion(''); inputRef.current?.focus(); }}
-            className="rounded-lg bg-surface/30 px-4 py-2 text-[12px] text-sub transition-colors hover:bg-surface/50 hover:text-text"
-          >
-            Ask another question
-          </button>
+          {done && (
+            <button
+              onClick={() => { setResponse(null); setTyping(false); setQuestion(''); inputRef.current?.focus(); }}
+              className="rounded-lg bg-surface/30 px-4 py-2 text-[12px] text-sub transition-colors hover:bg-surface/50 hover:text-text"
+            >
+              Ask another question
+            </button>
+          )}
         </div>
       )}
 
