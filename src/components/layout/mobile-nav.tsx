@@ -7,10 +7,10 @@ import { useAppStore } from '@/stores/app-store'
 // Mobile shows only 5 key tabs — most-used destinations
 const MOBILE_NAV = [
   { id: 'stream', label: 'Stream', href: '/', icon: 'stream' },
-  { id: 'people', label: 'People', href: '/people', icon: 'people' },
-  { id: 'ask', label: 'Ask', href: '/ask', icon: 'ask' },
+  { id: 'people', label: 'Gallery', href: '/people', icon: 'people' },
+  { id: 'ask', label: 'Oracle', href: '/ask', icon: 'ask' },
   { id: 'verticals', label: 'Verticals', href: '/verticals', icon: 'verticals' },
-  { id: 'insights', label: 'Insights', href: '/insights', icon: 'insights' },
+  { id: 'insights', label: 'Nexus', href: '/insights', icon: 'insights' },
 ] as const
 
 const ICONS: Record<string, React.ReactNode> = {

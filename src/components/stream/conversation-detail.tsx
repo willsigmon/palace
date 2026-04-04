@@ -9,6 +9,7 @@ import type { SpeakerSuggestionsResponse } from '@/lib/api'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Avatar } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/toast'
+import { useAppStore } from '@/stores/app-store'
 
 interface ConversationDetailProps {
   readonly detail: ConversationDetailType
@@ -35,6 +36,13 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   const [topicLoading, setTopicLoading] = useState(false)
   const [transcriptSearch, setTranscriptSearch] = useState('')
   const { addToast } = useToast()
+
+  // Activity pulse — shift ambient orbs to match this conversation's category
+  const setActiveCategory = useAppStore((s) => s.setActiveCategory)
+  useEffect(() => {
+    setActiveCategory(session.category ?? null)
+    return () => setActiveCategory(null)
+  }, [session.category, setActiveCategory])
 
   // Notes state
   const NOTES_KEY = `palace-note-${session.id}`

@@ -13,6 +13,7 @@ import { NativeInit } from '@/components/layout/native-init'
 import { KeyboardHelp } from '@/components/ui/keyboard-help'
 import { ToastContainer } from '@/components/ui/toast'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
+import { WormholeButton } from '@/components/ui/wormhole-button'
 
 const inter = Inter({
   variable: '--font-sans',
@@ -93,6 +94,7 @@ export default function RootLayout({
         </main>
 
         <MobileNav />
+        <WormholeButton />
         <RecordButton />
         <NativeInit />
         <KeyboardHelp />

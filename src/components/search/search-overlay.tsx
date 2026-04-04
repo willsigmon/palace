@@ -140,6 +140,15 @@ export function SearchOverlay() {
 
   function handleInput(value: string) {
     setQuery(value)
+
+    // Easter egg: typing "palace" opens The Vault
+    if (value.toLowerCase().trim() === 'palace') {
+      closeSearch()
+      localStorage.setItem('palace-vault-discovered', 'true')
+      router.push('/vault')
+      return
+    }
+
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => doSearch(value), 200)
   }

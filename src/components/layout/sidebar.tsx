@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAppStore } from '@/stores/app-store'
 import { NAV_ITEMS } from '@/lib/constants'
 import { ApiStatus } from './api-status'
@@ -119,13 +119,34 @@ const ICONS: Record<string, React.ReactNode> = {
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { sidebarExpanded, toggleSidebar, initTheme } = useAppStore()
+  const vaultDiscovered = useRef(false)
 
   // Initialize theme on mount (reads localStorage, sets up system listener)
   useEffect(() => {
     const cleanup = initTheme()
+    // Check if vault was previously discovered
+    vaultDiscovered.current = localStorage.getItem('palace-vault-discovered') === 'true'
     return cleanup
   }, [initTheme])
+
+  // Triple-click detection for vault easter egg
+  const clickTimesRef = useRef<number[]>([])
+  const handleLogoClick = useCallback(() => {
+    const now = Date.now()
+    clickTimesRef.current = [...clickTimesRef.current.filter((t) => now - t < 600), now]
+
+    if (clickTimesRef.current.length >= 3) {
+      clickTimesRef.current = []
+      localStorage.setItem('palace-vault-discovered', 'true')
+      vaultDiscovered.current = true
+      router.push('/vault')
+      return
+    }
+
+    toggleSidebar()
+  }, [toggleSidebar, router])
 
   return (
     <aside
@@ -137,9 +158,9 @@ export function Sidebar() {
         ${sidebarExpanded ? 'w-52' : 'w-14'}
       `}
     >
-      {/* Logo */}
+      {/* Logo — triple-click opens The Vault */}
       <button
-        onClick={toggleSidebar}
+        onClick={handleLogoClick}
         className="flex h-14 items-center justify-center border-b border-border/30 transition-colors hover:bg-surface/30"
         aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
       >
@@ -182,6 +203,36 @@ export function Sidebar() {
             </Link>
           )
         })}
+
+        {/* Ghost vault link — appears after discovery */}
+        {vaultDiscovered.current && (
+          <Link
+            href="/vault"
+            className={`
+              group relative flex items-center gap-3 rounded-lg px-2.5 py-2
+              transition-all duration-200 mt-1
+              ${pathname === '/vault'
+                ? 'bg-accent/10 text-accent'
+                : 'text-muted/25 hover:text-muted/50 hover:bg-surface/20'
+              }
+            `}
+            title="The Vault"
+          >
+            {pathname === '/vault' && (
+              <div className="absolute -left-1.5 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-accent" />
+            )}
+            <span className="shrink-0">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="14" height="14" rx="2" />
+                <circle cx="10" cy="10" r="2" />
+                <path d="M10 8v-2M10 14v-2" />
+              </svg>
+            </span>
+            {sidebarExpanded && (
+              <span className="text-sm font-medium font-[family-name:var(--font-serif)] italic">The Vault</span>
+            )}
+          </Link>
+        )}
       </nav>
 
       {/* Footer with theme toggle + API status */}

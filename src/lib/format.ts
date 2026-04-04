@@ -118,3 +118,24 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength - 1).trimEnd() + '\u2026'
 }
+
+/**
+ * Memory patina — returns an age bucket for visual aging of conversation cards.
+ * fresh: < 7 days, recent: 7d-6mo, aged: 6mo-1yr, vintage: 1yr+
+ */
+export type Patina = 'fresh' | 'recent' | 'aged' | 'vintage'
+
+const DAY_MS = 86_400_000
+const PATINA_THRESHOLDS = [
+  { max: 7 * DAY_MS, value: 'fresh' as const },
+  { max: 180 * DAY_MS, value: 'recent' as const },
+  { max: 365 * DAY_MS, value: 'aged' as const },
+] as const
+
+export function getPatina(startedAt: string): Patina {
+  const age = Date.now() - parseTimestamp(startedAt).getTime()
+  for (const t of PATINA_THRESHOLDS) {
+    if (age < t.max) return t.value
+  }
+  return 'vintage'
+}

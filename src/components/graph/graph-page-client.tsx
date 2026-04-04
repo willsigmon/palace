@@ -36,6 +36,7 @@ export function GraphPageClient({ initialNodes, initialEdges }: GraphPageClientP
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [centerNodeId, setCenterNodeId] = useState(WILL_NODE_ID)
   const [loading, setLoading] = useState(false)
+  const [constellation, setConstellation] = useState(false)
   const router = useRouter()
 
   const handleNodeClick = useCallback((node: GraphNode) => {
@@ -77,6 +78,16 @@ export function GraphPageClient({ initialNodes, initialEdges }: GraphPageClientP
         >
           Center on Will
         </button>
+        <button
+          onClick={() => setConstellation((prev) => !prev)}
+          className={`rounded-lg px-3 py-1.5 text-[11px] font-medium transition-colors ${
+            constellation
+              ? 'bg-memory/15 text-memory hover:bg-memory/25'
+              : 'bg-surface/30 text-muted hover:bg-surface/50 hover:text-sub'
+          }`}
+        >
+          {constellation ? 'Constellation' : 'Network'}
+        </button>
         {loading && (
           <div className="flex items-center gap-1.5 text-[11px] text-sub">
             <div className="h-3 w-3 animate-spin rounded-full border border-accent/30 border-t-accent" />
@@ -96,6 +107,7 @@ export function GraphPageClient({ initialNodes, initialEdges }: GraphPageClientP
           edges={edges}
           centerNodeId={centerNodeId}
           onNodeClick={handleNodeClick}
+          constellation={constellation}
         />
 
         {/* Legend */}

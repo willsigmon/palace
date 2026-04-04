@@ -323,4 +323,16 @@ export function getIdentityGraph(limit = 50) {
   return request<IdentityGraphResponse>(`/api/identity/graph`, { limit })
 }
 
+// === Random Conversation (for Wormhole) ===
+
+export async function getRandomConversation(): Promise<ConversationListItem | null> {
+  // Fetch a page at a random offset
+  const stats = await getStats()
+  const total = stats.conversations
+  if (total === 0) return null
+  const offset = Math.floor(Math.random() * total)
+  const items = await getConversations({ limit: 1, offset })
+  return items[0] ?? null
+}
+
 export { ApiError }

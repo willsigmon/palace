@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { ConversationListItem } from '@/types/api'
-import { formatRelativeTime, formatTime, formatDuration, calcDuration, truncate } from '@/lib/format'
+import { formatRelativeTime, formatTime, formatDuration, calcDuration, truncate, getPatina } from '@/lib/format'
 import { Avatar } from '@/components/ui/avatar'
 
 interface ConversationCardProps {
@@ -39,6 +39,8 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
   const colors = getCategoryColors(conversation.category)
   const isUntitled = !conversation.title || conversation.title === 'Untitled'
   const isEmpty = isUntitled && !overview
+  const patina = getPatina(conversation.startedAt)
+  const patinaClass = patina === 'fresh' ? '' : `patina-${patina}`
 
   // Parse people_mentioned
   const people: readonly string[] = (() => {
@@ -60,7 +62,7 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
       <Link
         href={`/conversation/${conversation.id}`}
         data-card-index={index}
-        className={`group flex items-center gap-4 rounded-lg border border-border/30 border-l-2 ${colors.border} bg-surface/30 px-4 py-2.5 transition-all duration-200 hover:border-border/50 hover:bg-surface/50`}
+        className={`group flex items-center gap-4 rounded-lg border border-border/30 border-l-2 ${colors.border} bg-surface/30 px-4 py-2.5 transition-all duration-200 hover:border-border/50 hover:bg-surface/50 ${patinaClass}`}
       >
         {conversation.emoji && <span className="text-sm">{conversation.emoji}</span>}
         <span className="text-sm text-sub group-hover:text-text transition-colors">
@@ -89,7 +91,7 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
     <Link
       href={`/conversation/${conversation.id}`}
       data-card-index={index}
-      className={`group relative block rounded-xl border border-border/40 border-l-[3px] ${colors.border} bg-surface/50 p-5 transition-all duration-250 hover:border-border/60 hover:bg-surface/70 hover:shadow-card`}
+      className={`group relative block rounded-xl border border-border/40 border-l-[3px] ${colors.border} bg-surface/50 p-5 transition-all duration-250 hover:border-border/60 hover:bg-surface/70 hover:shadow-card ${patinaClass}`}
     >
       {/* Top row: emoji + time + duration + category */}
       <div className="mb-2.5 flex items-center gap-2">
@@ -117,7 +119,7 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
       </div>
 
       {/* Title */}
-      <h3 className="mb-1 text-[15px] font-medium leading-snug text-text group-hover:text-accent transition-colors duration-200">
+      <h3 className="patina-title mb-1 text-[15px] font-medium leading-snug text-text group-hover:text-accent transition-colors duration-200">
         {truncate(title, 80)}
       </h3>
 
@@ -148,7 +150,7 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
         {conversation.source === 'limitless' && (
           <span className="rounded-full bg-indigo-400/10 px-1.5 py-0.5 text-[8px] font-medium text-indigo-400/60">L</span>
         )}
-        <time className="text-[11px] text-muted font-[family-name:var(--font-mono)]" dateTime={conversation.startedAt}>
+        <time className="patina-time text-[11px] text-muted font-[family-name:var(--font-mono)]" dateTime={conversation.startedAt}>
           {formatRelativeTime(conversation.startedAt)}
         </time>
       </div>

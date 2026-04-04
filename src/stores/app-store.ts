@@ -37,6 +37,10 @@ interface AppState {
   readonly filters: FilterState
   readonly setFilter: <K extends keyof FilterState>(key: K, value: FilterState[K]) => void
   readonly clearFilters: () => void
+
+  // Ambient — active conversation category for orb pulse
+  readonly activeCategory: string | null
+  readonly setActiveCategory: (category: string | null) => void
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -138,4 +142,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       filters: { ...state.filters, [key]: value },
     })),
   clearFilters: () => set({ filters: DEFAULT_FILTERS }),
+
+  // Ambient
+  activeCategory: null,
+  setActiveCategory: (category) => set({ activeCategory: category }),
 }))

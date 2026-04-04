@@ -2,6 +2,7 @@ import { getConversations, getStats, getOnThisDay, getDigest } from '@/lib/api'
 import { StreamList } from '@/components/stream/stream-list'
 import { StreamHeader } from '@/components/stream/stream-header'
 import { IntelligenceSection } from '@/components/stream/intelligence-section'
+import { DailyRitualWrapper } from '@/components/stream/daily-ritual-wrapper'
 
 export default async function StreamPage() {
   let conversations, stats, onThisDay, digest
@@ -22,6 +23,7 @@ export default async function StreamPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-[var(--space-page)] py-8">
+      <DailyRitualWrapper digest={digest} onThisDay={onThisDay} />
       <StreamHeader stats={stats} />
       <IntelligenceSection digest={digest} onThisDay={onThisDay} />
       <StreamList initialConversations={conversations} />

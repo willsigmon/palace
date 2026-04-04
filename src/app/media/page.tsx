@@ -127,7 +127,7 @@ export default function MediaPage() {
     <div className="mx-auto max-w-3xl px-[var(--space-page)] py-8">
       <header className="mb-6">
         <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text">
-          Media
+          The Theater
         </h1>
         <p className="mt-1.5 text-sm text-sub">
           What you listen to, watch, and play — automatically tracked.

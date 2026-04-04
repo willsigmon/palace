@@ -27,7 +27,7 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
     <header className="mb-8">
       {/* Title + dynamic subtitle */}
       <div className="mb-5">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-4xl)] italic text-text leading-tight">
+        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text leading-tight">
           The Stream
         </h1>
         {stats ? (
