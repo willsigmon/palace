@@ -160,7 +160,7 @@ export function Sidebar() {
     <aside
       className={`
         fixed left-0 top-0 z-40 hidden h-full flex-col
-        border-r border-border/40 bg-void/95 backdrop-blur-sm
+        border-r border-border/40 glass
         transition-all duration-300
         md:flex
         ${sidebarExpanded ? 'w-52' : 'w-14'}
@@ -172,8 +172,8 @@ export function Sidebar() {
         className="flex h-14 items-center justify-center border-b border-border/30 transition-colors hover:bg-surface/30"
         aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
       >
-        <span className="gradient-text text-xl font-bold tracking-tight font-[family-name:var(--font-serif)] italic">
-          {sidebarExpanded ? 'PALACE' : 'P'}
+        <span className="gradient-text text-lg font-bold tracking-tight">
+          P
         </span>
       </button>
 

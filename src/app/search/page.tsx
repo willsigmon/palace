@@ -46,8 +46,8 @@ export default function SearchPage() {
   return (
     <div className="mx-auto max-w-3xl px-[var(--space-page)] py-8">
       <header className="mb-8">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text">
-          The Stacks
+        <h1 className="text-lg font-semibold text-text">
+          Search
         </h1>
         <p className="mt-1.5 text-sm text-sub">
           Deep search across your entire life archive.

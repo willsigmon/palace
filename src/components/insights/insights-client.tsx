@@ -16,8 +16,8 @@ export function InsightsClient({ patterns, onThisDay, serendipity, digest }: Ins
   return (
     <div>
       <header className="mb-8">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text">
-          The Nexus
+        <h1 className="text-lg font-semibold text-text">
+          Insights
         </h1>
         <p className="mt-1.5 text-sm text-sub">
           Patterns, serendipity, and synthesis from your life data.

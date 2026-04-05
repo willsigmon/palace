@@ -90,7 +90,7 @@ export function PersonProfile({ data }: PersonProfileProps) {
       <header className="mb-8 flex items-start gap-5">
         <Avatar name={name} size="xl" />
         <div>
-          <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-2xl)] italic text-text">
+          <h1 className="text-lg font-semibold text-text">
             {name}
           </h1>
           <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted font-[family-name:var(--font-mono)]">

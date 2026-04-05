@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function VoicePage() {
-  redirect('/ask?voice=1')
+  redirect('/?voice=1')
 }

@@ -175,7 +175,7 @@ export function StreamList({ initialConversations }: StreamListProps) {
 
       {visibleConversations.length === 0 && !loading && (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="font-[family-name:var(--font-serif)] text-2xl italic text-sub">
+          <p className="text-lg font-semibold text-sub">
             No conversations yet
           </p>
           <p className="mt-2 text-sm text-muted">

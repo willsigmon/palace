@@ -27,9 +27,7 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
     <header className="mb-8">
       {/* Title + dynamic subtitle */}
       <div className="mb-5">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text leading-tight">
-          The Stream
-        </h1>
+        <h1 className="text-lg font-semibold text-text">Timeline</h1>
         {stats ? (
           <p className="mt-1.5 text-sm text-sub">
             {formatNumber(stats.conversations)} conversations · {formatNumber(stats.memories)} memories · {formatNumber(stats.enrichment?.people ?? 0)} people

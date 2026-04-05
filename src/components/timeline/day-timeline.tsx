@@ -107,7 +107,7 @@ export function DayTimeline({ date, events }: DayTimelineProps) {
 
       {/* Header */}
       <header className="mb-8">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-2xl)] italic text-text">
+        <h1 className="text-lg font-semibold text-text">
           {formatDateHeading(date)}
         </h1>
         <p className="mt-1 text-xs text-muted font-[family-name:var(--font-mono)]">

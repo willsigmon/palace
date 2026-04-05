@@ -167,8 +167,8 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
     <div>
       {/* Header */}
       <header className="mb-6">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text">
-          The Gallery
+        <h1 className="text-lg font-semibold text-text">
+          People
         </h1>
         <p className="mt-1 text-xs text-muted font-[family-name:var(--font-mono)]">
           {totalShown} people from Family Tree, Clay, and conversations

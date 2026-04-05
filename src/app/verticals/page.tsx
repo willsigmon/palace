@@ -49,7 +49,7 @@ export default function VerticalsPage() {
   return (
     <div className="mx-auto max-w-4xl px-[var(--space-page)] py-8">
       <header className="mb-8">
-        <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-3xl)] italic text-text">
+        <h1 className="text-lg font-semibold text-text">
           Verticals
         </h1>
         <p className="mt-1.5 text-sm text-sub">
@@ -155,7 +155,7 @@ export default function VerticalsPage() {
 
                     {/* Ask about this vertical */}
                     <Link
-                      href={`/ask?q=What's+the+latest+with+${encodeURIComponent(v.name)}?`}
+                      href={`/?q=What's+the+latest+with+${encodeURIComponent(v.name)}?`}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20"
                     >
                       <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">

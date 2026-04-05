@@ -247,7 +247,7 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
             <span className="mt-1 text-2xl">{session.emoji}</span>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="font-[family-name:var(--font-serif)] text-[length:var(--text-2xl)] italic leading-tight text-text">
+            <h1 className="text-lg font-semibold text-text">
               {title}
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted font-[family-name:var(--font-mono)]">

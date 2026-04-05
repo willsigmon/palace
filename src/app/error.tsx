@@ -15,7 +15,7 @@ export default function Error({
           <path d="M10 6v4M10 13v.5" strokeLinecap="round" />
         </svg>
       </div>
-      <h1 className="font-[family-name:var(--font-serif)] text-2xl italic text-text mb-2">
+      <h1 className="text-lg font-semibold text-text mb-2">
         Can&apos;t reach your PALACE
       </h1>
       <p className="max-w-sm text-sm text-sub mb-6">

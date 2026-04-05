@@ -4,13 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAppStore } from '@/stores/app-store'
 
-// Mobile shows only 5 key tabs — most-used destinations
+// Mobile: 5 tabs, Marlin first
 const MOBILE_NAV = [
-  { id: 'stream', label: 'Stream', href: '/', icon: 'stream' },
-  { id: 'people', label: 'Gallery', href: '/people', icon: 'people' },
-  { id: 'ask', label: 'Oracle', href: '/ask', icon: 'ask' },
-  { id: 'voice', label: 'Marlin', href: '/ask?voice=1', icon: 'voice' },
-  { id: 'insights', label: 'Nexus', href: '/insights', icon: 'insights' },
+  { id: 'marlin', label: 'Marlin', href: '/', icon: 'voice' },
+  { id: 'timeline', label: 'Timeline', href: '/timeline', icon: 'stream' },
+  { id: 'people', label: 'People', href: '/people', icon: 'people' },
+  { id: 'memories', label: 'Memories', href: '/memories', icon: 'memories' },
+  { id: 'search', label: 'Search', href: '/search', icon: 'search' },
 ] as const
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -25,6 +25,12 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M2 16c0-2.5 2-4.5 5-4.5s5 2 5 4.5" />
       <circle cx="14" cy="7" r="2" />
       <path d="M14 11c2.5 0 4 1.5 4 3.5" strokeLinecap="round" />
+    </svg>
+  ),
+  memories: (
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <rect x="3" y="3" width="14" height="14" rx="2" />
+      <path d="M3 7h14M7 3v14" />
     </svg>
   ),
   search: (
@@ -67,7 +73,7 @@ export function MobileNav() {
   const { theme, cycleTheme } = useAppStore()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-void/95 backdrop-blur-lg md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 glass-heavy md:hidden">
       <div className="flex items-center justify-around px-1">
         {MOBILE_NAV.map((item) => {
           const isActive = item.href === '/'
