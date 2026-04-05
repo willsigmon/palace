@@ -95,30 +95,7 @@ export function MobileNav() {
             </Link>
           )
         })}
-        {/* Theme toggle */}
-        <button
-          onClick={cycleTheme}
-          className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg text-muted transition-colors duration-200"
-        >
-          {theme === 'light' ? (
-            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <circle cx="10" cy="10" r="4" />
-              <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" />
-            </svg>
-          ) : theme === 'system' ? (
-            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="14" height="10" rx="2" />
-              <path d="M7 17h6" />
-            </svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <path d="M17.5 10.5a7.5 7.5 0 0 1-10-10 7.5 7.5 0 1 0 10 10z" />
-            </svg>
-          )}
-          <span className="text-[9px] font-medium">
-            {theme === 'system' ? 'Auto' : theme === 'light' ? 'Light' : 'Dark'}
-          </span>
-        </button>
+        {/* Theme toggle removed — use the toggle in top-right corner instead */}
       </div>
       {/* Safe area for iOS notch/home indicator */}
       <div className="h-[env(safe-area-inset-bottom)]" />

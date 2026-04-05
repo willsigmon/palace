@@ -12,8 +12,10 @@ const config: CapacitorConfig = {
   ios: {
     scheme: 'PALACE',
     contentInset: 'automatic',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#fafafa',
     preferredContentMode: 'mobile',
+    scrollEnabled: true,
+    allowsLinkPreview: false,
   },
   plugins: {
     Geolocation: {

@@ -75,7 +75,7 @@ export default function RootLayout({
         {/* Flash-prevention: apply theme class before first paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('palace-theme');var r=t==='light'?'light':t==='system'&&window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';if(r==='light')document.documentElement.classList.add('light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',r==='light'?'#f5f0e8':'#1a1a2e')}catch(e){}})()`,
+            __html: `(function(){try{var t=localStorage.getItem('palace-theme');var r=t==='light'?'light':t==='system'&&window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';if(r==='light')document.documentElement.classList.add('light');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',r==='light'?'#fafafa':'#1a1a2e')}catch(e){}})()`,
           }}
         />
       </head>
@@ -88,9 +88,7 @@ export default function RootLayout({
 
         {/* Main content — offset for sidebar on desktop */}
         <main className="min-h-screen pb-20 md:pl-14 md:pb-0">
-          <div className="animate-fade-in">
-            {children}
-          </div>
+          {children}
         </main>
 
         <MobileNav />

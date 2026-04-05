@@ -71,7 +71,7 @@ export function RecordButton() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 md:bottom-8 md:right-8">
+    <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-2 md:bottom-8 md:right-8">
       {/* Source menu */}
       {showMenu && !recording && (
         <div className="rounded-xl border border-border/40 bg-surface/95 p-2 shadow-glass backdrop-blur-sm">
