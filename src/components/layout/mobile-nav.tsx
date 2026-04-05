@@ -54,10 +54,10 @@ const ICONS: Record<string, React.ReactNode> = {
     </svg>
   ),
   voice: (
-    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <path d="M10 2a2.5 2.5 0 0 0-2.5 2.5v5a2.5 2.5 0 0 0 5 0v-5A2.5 2.5 0 0 0 10 2Z" />
-      <path d="M15.5 8.5v1a5.5 5.5 0 0 1-11 0v-1" />
-      <line x1="10" y1="15" x2="10" y2="18" />
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 10c2-3 5-5 9-5 2 0 3.5.8 4.5 2l2 1.5-2 1.5c-1 1.2-2.5 2-4.5 2-4 0-7-2-9-5z" />
+      <path d="M11 5c.5-1.5 1.5-2.5 2.5-3" />
+      <circle cx="14" cy="9" r="0.8" fill="currentColor" stroke="none" />
     </svg>
   ),
 }
