@@ -1,43 +1,115 @@
 'use client'
 
+import { useRef, useEffect, useState } from 'react'
 import type { VoiceState } from '@/hooks/use-marlin-voice'
 
 interface VoiceInputBarProps {
   state: VoiceState
   audioLevel: number
   onStop: () => void
+  onCancel?: () => void
 }
 
-export function VoiceInputBar({ state, audioLevel, onStop }: VoiceInputBarProps) {
+const BAR_COUNT = 7
+
+export function VoiceInputBar({ state, audioLevel, onStop, onCancel }: VoiceInputBarProps) {
+  // Animated bar heights via rAF — not from render cycle
+  const [bars, setBars] = useState<number[]>(Array(BAR_COUNT).fill(4))
+  const rafRef = useRef<number>(0)
+  const audioLevelRef = useRef(audioLevel)
+  audioLevelRef.current = audioLevel
+
+  useEffect(() => {
+    if (state !== 'listening') {
+      setBars(Array(BAR_COUNT).fill(4))
+      return
+    }
+
+    let t = 0
+    function animate() {
+      t += 1
+      const level = audioLevelRef.current
+      const next = Array.from({ length: BAR_COUNT }, (_, i) => {
+        const phase = Math.sin(t * 0.12 + i * 0.8) * 0.4 + 0.6
+        return 4 + level * 32 * phase
+      })
+      setBars(next)
+      rafRef.current = requestAnimationFrame(animate)
+    }
+    rafRef.current = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [state])
+
   return (
-    <div className="flex items-center gap-3 py-2">
-      {/* Waveform bars */}
-      <div className="flex flex-1 items-center justify-center gap-[3px] h-10">
-        {state === 'listening' && Array.from({ length: 7 }).map((_, i) => {
-          const phase = Math.sin(Date.now() / 180 + i * 0.9) * 0.4 + 0.6
-          const h = 6 + audioLevel * 28 * phase
-          return (
-            <div
-              key={i}
-              className="w-[3px] rounded-full bg-accent transition-[height] duration-75"
-              style={{ height: `${h}px` }}
-            />
-          )
-        })}
+    <div className="flex items-center gap-3 py-3">
+      {/* Cancel button */}
+      {onCancel && (state === 'listening' || state === 'processing') && (
+        <button
+          onClick={onCancel}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted/60 transition-colors hover:text-text active:scale-95"
+          aria-label="Cancel"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      )}
+
+      {/* Waveform / status */}
+      <div className="flex flex-1 items-center justify-center gap-[3px] h-12">
+        {state === 'listening' && bars.map((h, i) => (
+          <div
+            key={i}
+            className="w-[3px] rounded-full bg-accent"
+            style={{
+              height: `${h}px`,
+              opacity: 0.6 + (h / 36) * 0.4,
+              transition: 'height 60ms ease-out',
+            }}
+          />
+        ))}
         {state === 'processing' && (
-          <span className="text-sm text-sub animate-pulse">Marlin is thinking...</span>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-2 w-2 rounded-full bg-accent animate-pulse"
+                  style={{ animationDelay: `${i * 200}ms` }}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-sub">Marlin is thinking...</span>
+          </div>
+        )}
+        {state === 'speaking' && (
+          <div className="flex items-center gap-2">
+            <div className="flex gap-[2px]">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="w-[2px] rounded-full bg-serendipity animate-pulse"
+                  style={{
+                    height: `${8 + Math.random() * 16}px`,
+                    animationDelay: `${i * 120}ms`,
+                  }}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-sub">Marlin is speaking...</span>
+          </div>
         )}
       </div>
 
-      {/* Stop button */}
+      {/* Stop recording button */}
       {state === 'listening' && (
         <button
           onClick={onStop}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/20 text-accent transition-colors hover:bg-accent/30"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-void transition-all hover:bg-accent/90 active:scale-90"
           aria-label="Stop recording"
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-            <rect x="1" y="1" width="12" height="12" rx="2" />
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="3" y="3" width="10" height="10" rx="2" />
           </svg>
         </button>
       )}

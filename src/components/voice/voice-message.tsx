@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { hapticImpact } from '@/lib/haptics'
 
 interface VoiceMessageProps {
   response: string
@@ -54,8 +55,8 @@ export function VoiceMessage({ response, model, audioBase64, timings }: VoiceMes
       <div className="mt-2 flex items-center gap-2">
         {audioBase64 && (
           <button
-            onClick={togglePlay}
-            className="flex items-center gap-1.5 rounded-md bg-surface/30 px-2 py-1 text-[10px] text-muted transition-colors hover:bg-surface/50 hover:text-sub"
+            onClick={() => { hapticImpact('light'); togglePlay(); }}
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-surface/30 px-3 py-1 text-[11px] text-muted transition-colors hover:bg-surface/50 hover:text-sub active:scale-95"
             aria-label={playing ? 'Stop playback' : 'Replay audio'}
           >
             {playing ? (

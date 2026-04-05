@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { hapticImpact, hapticNotification } from '@/lib/haptics'
 
 const MARLIN_API = process.env.NEXT_PUBLIC_MARLIN_URL ?? 'https://marlin.sigflix.stream'
 
@@ -63,6 +64,8 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
       audioElRef.current = audio
+      // iOS WKWebView: set playsinline attribute
+      audio.setAttribute('playsinline', 'true')
 
       audio.onended = () => {
         URL.revokeObjectURL(url)
@@ -106,10 +109,16 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
 
   const startListening = useCallback(async () => {
     setError('')
+    hapticImpact('medium')
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000,
+        },
       })
       streamRef.current = stream
 
@@ -118,6 +127,7 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
       const source = audioCtx.createMediaStreamSource(stream)
       const analyser = audioCtx.createAnalyser()
       analyser.fftSize = 256
+      analyser.smoothingTimeConstant = 0.4
       source.connect(analyser)
       analyserRef.current = analyser
 
@@ -137,6 +147,7 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
         setAudioLevel(0)
         stream.getTracks().forEach((t) => t.stop())
         audioCtx.close().catch(() => {})
+        hapticImpact('light')
 
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
         if (blob.size < 1000) {
@@ -148,12 +159,14 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
         try {
           const result = await sendAudio(blob)
           onResultRef.current?.(result)
+          hapticNotification('success')
 
           setState('speaking')
           await playAudio(result.audioBase64)
           setState('idle')
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Voice request failed')
+          hapticNotification('error')
           setState('error')
           setTimeout(() => setState('idle'), 3000)
         }
@@ -161,9 +174,11 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
 
       recorder.start(100)
       setState('listening')
+      hapticNotification('success')
       monitorAudio()
     } catch {
       setError('Microphone access denied')
+      hapticNotification('error')
       setState('error')
       setTimeout(() => setState('idle'), 3000)
     }
@@ -171,6 +186,7 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
 
   const stopListening = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'recording') {
+      hapticImpact('heavy')
       mediaRecorderRef.current.stop()
     }
   }, [])
@@ -182,10 +198,11 @@ export function useMarlinVoice(options: UseMarlinVoiceOptions = {}) {
     setAudioLevel(0)
     streamRef.current?.getTracks().forEach((t) => t.stop())
     audioCtxRef.current?.close().catch(() => {})
+    hapticImpact('light')
     setState('idle')
+    setError('')
   }, [stopListening, stopAudio])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animFrameRef.current)

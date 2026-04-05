@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { useMarlinVoice, type VoiceResult } from '@/hooks/use-marlin-voice'
 import { VoiceInputBar } from '@/components/voice/voice-input-bar'
 import { VoiceMessage } from '@/components/voice/voice-message'
+import { hapticImpact, hapticSelection } from '@/lib/haptics'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
 
@@ -195,6 +196,7 @@ function AskPageInner() {
 
   // Mic button handler
   function toggleVoice() {
+    hapticImpact('medium')
     if (voice.state === 'idle') {
       setVoiceMode(true)
       voice.startListening()
@@ -256,8 +258,8 @@ function AskPageInner() {
             {EXAMPLE_QUESTIONS.map((q) => (
               <button
                 key={q}
-                onClick={() => { setQuestion(q); ask(q); }}
-                className="rounded-full border border-border/30 bg-surface/20 px-3 py-1.5 text-[11px] text-sub/60 transition-all hover:border-accent/30 hover:text-accent"
+                onClick={() => { hapticSelection(); setQuestion(q); ask(q); }}
+                className="rounded-full border border-border/30 bg-surface/20 px-3.5 py-2 text-[12px] text-sub/60 transition-all hover:border-accent/30 hover:text-accent active:scale-95"
               >
                 {q}
               </button>
@@ -273,7 +275,7 @@ function AskPageInner() {
           const showTypewriter = isLatest && typing
 
           return (
-            <div key={msg.id} className="space-y-4">
+            <div key={msg.id} className="space-y-4 animate-fade-in">
               {/* User message */}
               <div className="flex gap-3">
                 <div className="mt-1 shrink-0">
@@ -380,14 +382,18 @@ function AskPageInner() {
         <div ref={threadEndRef} />
       </div>
 
-      {/* Input bar — sticky bottom */}
-      <div className="sticky bottom-0 bg-void/80 backdrop-blur-sm pb-4 pt-2 -mx-[var(--space-page)] px-[var(--space-page)] border-t border-border/10">
+      {/* Input bar — sticky bottom with iOS safe area */}
+      <div
+        className="sticky bottom-0 bg-void/90 backdrop-blur-md pt-2 -mx-[var(--space-page)] px-[var(--space-page)] border-t border-border/10"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}
+      >
         {voice.isActive ? (
-          <div className="rounded-xl border border-accent/30 bg-surface/20 px-4">
+          <div className="rounded-2xl border border-accent/30 bg-surface/20 px-4 shadow-[0_0_20px_var(--color-glow)]">
             <VoiceInputBar
               state={voice.state}
               audioLevel={voice.audioLevel}
               onStop={voice.stopListening}
+              onCancel={voice.cancel}
             />
           </div>
         ) : (
@@ -399,31 +405,31 @@ function AskPageInner() {
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && ask('')}
               placeholder={voiceMode ? 'Type or press M to talk...' : 'What would you like to know?'}
-              className="w-full rounded-xl border border-border/40 bg-surface/30 py-4 pl-5 pr-28 text-base text-text placeholder:text-muted/50 outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_24px_var(--color-glow)]"
-              autoFocus
+              className="w-full rounded-2xl border border-border/40 bg-surface/30 py-4 pl-5 pr-32 text-[16px] text-text placeholder:text-muted/50 outline-none transition-all focus:border-accent/40 focus:shadow-[0_0_24px_var(--color-glow)]"
+              enterKeyHint="send"
               disabled={loading}
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-              {/* Mic button */}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {/* Mic button — 44px touch target for iOS */}
               <button
                 onClick={toggleVoice}
                 disabled={loading || voice.isActive}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-all hover:bg-surface/40 hover:text-accent disabled:opacity-30"
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-muted transition-all hover:bg-surface/40 hover:text-accent active:scale-90 disabled:opacity-30"
                 aria-label="Voice mode"
                 title="Press M to talk"
               >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <path d="M9 2a2 2 0 0 0-2 2v4.5a2 2 0 0 0 4 0V4a2 2 0 0 0-2-2Z" />
-                  <path d="M14 7.5v1a5 5 0 0 1-10 0v-1" />
-                  <line x1="9" y1="13.5" x2="9" y2="16" />
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M10 2a2.5 2.5 0 0 0-2.5 2.5v5a2.5 2.5 0 0 0 5 0v-5A2.5 2.5 0 0 0 10 2Z" />
+                  <path d="M16 8.5v1a6 6 0 0 1-12 0v-1" />
+                  <line x1="10" y1="15.5" x2="10" y2="18" />
                 </svg>
               </button>
 
-              {/* Ask button */}
+              {/* Ask button — 44px touch target */}
               <button
-                onClick={() => ask('')}
+                onClick={() => { hapticImpact('light'); ask(''); }}
                 disabled={loading || !question.trim()}
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-void transition-all hover:bg-accent/90 disabled:opacity-40"
+                className="flex h-11 items-center justify-center rounded-xl bg-accent px-5 text-sm font-medium text-void transition-all hover:bg-accent/90 active:scale-95 disabled:opacity-40"
               >
                 {loading ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-void/30 border-t-void" />
