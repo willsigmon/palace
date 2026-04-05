@@ -52,7 +52,7 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>PALACE tracks your location in the background to build a complete picture of your day.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>PALACE can record ambient audio to create conversation transcripts without Omi or Fieldy.</string>
+	<string>PALACE uses your microphone for voice conversations with Marlin, your personal AI assistant.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

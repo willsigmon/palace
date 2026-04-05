@@ -89,6 +89,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M10 7v.5M10 10.5h.01" strokeWidth="2" />
     </svg>
   ),
+  voice: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M10 2a2.5 2.5 0 0 0-2.5 2.5v5a2.5 2.5 0 0 0 5 0v-5A2.5 2.5 0 0 0 10 2Z" />
+      <path d="M15.5 8.5v1a5.5 5.5 0 0 1-11 0v-1" />
+      <line x1="10" y1="15" x2="10" y2="18" />
+    </svg>
+  ),
   verticals: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="13" width="14" height="3" rx="1" />

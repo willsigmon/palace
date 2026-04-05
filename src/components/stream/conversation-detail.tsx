@@ -44,6 +44,63 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
     return () => setActiveCategory(null)
   }, [session.category, setActiveCategory])
 
+  // Speaker editing
+  const [editingSpeaker, setEditingSpeaker] = useState<number | null>(null)
+  const [speakerEditValue, setSpeakerEditValue] = useState('')
+  const [speakerOverrides, setSpeakerOverrides] = useState<Record<string, string>>({})
+  const [reprocessing, setReprocessing] = useState(false)
+
+  const MARLIN_URL = typeof window !== 'undefined'
+    ? (process.env.NEXT_PUBLIC_MARLIN_URL ?? 'https://marlin.sigflix.stream')
+    : ''
+  const API_URL_CLIENT = typeof window !== 'undefined'
+    ? (process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me')
+    : ''
+
+  async function saveSpeakerName(speakerId: number, newName: string) {
+    if (!newName.trim()) return
+    try {
+      await fetch(`${API_URL_CLIENT}/api/identity/correct`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation_id: session.id,
+          speaker_id: speakerId,
+          correct_name: newName.trim(),
+        }),
+      })
+      setSpeakerOverrides((prev) => ({ ...prev, [String(speakerId)]: newName.trim() }))
+      addToast(`Speaker updated to "${newName.trim()}"`, 'info')
+    } catch {
+      addToast('Failed to update speaker', 'error')
+    }
+    setEditingSpeaker(null)
+  }
+
+  async function reprocessConversation() {
+    setReprocessing(true)
+    try {
+      const transcript = segments
+        .map((s) => `${getSpeakerName(s)}: ${s.text}`)
+        .join('\n')
+
+      const formData = new FormData()
+      formData.append('message', `Re-analyze this conversation and identify speakers, key topics, and action items:\n\n${transcript.slice(0, 4000)}`)
+      formData.append('session_id', `reprocess-${session.id}`)
+
+      const res = await fetch(`${MARLIN_URL}/api/chat`, {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      addToast('Re-processed with local AI', 'info')
+      setTopicInfo(data.response)
+    } catch {
+      addToast('Failed to re-process — is Marlin running?', 'error')
+    }
+    setReprocessing(false)
+  }
+
   // Notes state
   const NOTES_KEY = `palace-note-${session.id}`
   const [notes, setNotes] = useState('')
@@ -124,6 +181,7 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
   }
 
   function getSpeakerName(segment: (typeof segments)[number]): string {
+    if (speakerOverrides[String(segment.speaker)]) return speakerOverrides[String(segment.speaker)]
     if (segment.speakerName) return segment.speakerName
     if (speakerNames[String(segment.speaker)]) return speakerNames[String(segment.speaker)]
     if (segment.isUser) return 'You'
@@ -348,11 +406,11 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
         </div>
       )}
 
-      {/* Speaker legend */}
+      {/* Speaker legend — editable */}
       {uniqueSpeakers > 1 && (
         <section className="mb-6 rounded-xl border border-border/20 bg-surface/10 p-4">
           <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted/40">
-            Speakers in this conversation
+            Speakers — tap to rename
           </h2>
           <div className="flex flex-wrap gap-3">
             {Array.from(speakerIndexMap.entries()).map(([speakerId, idx]) => {
@@ -360,16 +418,58 @@ export function ConversationDetail({ detail, relatedConversations = [], relatedM
               if (!seg) return null
               const name = getSpeakerName(seg)
               const style = SPEAKER_PALETTE[idx % SPEAKER_PALETTE.length]!
+              const isEditing = editingSpeaker === speakerId
+
               return (
                 <div key={speakerId} className="flex items-center gap-2 rounded-lg bg-elevated/30 px-3 py-1.5">
                   <Avatar name={name} size="sm" />
-                  <span className={`text-[12px] font-medium ${style.text}`}>{name}</span>
+                  {isEditing ? (
+                    <input
+                      autoFocus
+                      value={speakerEditValue}
+                      onChange={(e) => setSpeakerEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveSpeakerName(speakerId, speakerEditValue)
+                        if (e.key === 'Escape') setEditingSpeaker(null)
+                      }}
+                      onBlur={() => saveSpeakerName(speakerId, speakerEditValue)}
+                      className="w-24 bg-transparent border-b border-accent/50 text-[12px] font-medium text-text outline-none"
+                      placeholder="Name..."
+                    />
+                  ) : (
+                    <button
+                      onClick={() => { setEditingSpeaker(speakerId); setSpeakerEditValue(name) }}
+                      className={`text-[12px] font-medium ${style.text} hover:underline cursor-pointer`}
+                      title="Click to rename"
+                    >
+                      {name}
+                    </button>
+                  )}
                 </div>
               )
             })}
           </div>
         </section>
       )}
+
+      {/* Re-process button */}
+      <div className="mb-4">
+        <button
+          onClick={reprocessConversation}
+          disabled={reprocessing}
+          className="flex items-center gap-2 rounded-lg border border-border/30 bg-surface/20 px-3 py-2 text-[11px] text-sub transition-all hover:border-accent/30 hover:text-accent disabled:opacity-40"
+        >
+          {reprocessing ? (
+            <div className="h-3 w-3 animate-spin rounded-full border border-accent/30 border-t-accent" />
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M1 8a7 7 0 0 1 12.3-4.5M15 8a7 7 0 0 1-12.3 4.5" />
+              <path d="M13.3 1v3h-3M2.7 15v-3h3" />
+            </svg>
+          )}
+          {reprocessing ? 'Re-processing with local AI...' : 'Re-process with Marlin'}
+        </button>
+      </div>
 
       {/* Transcript */}
       <section>
