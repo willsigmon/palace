@@ -6,6 +6,8 @@ struct MarlinView: View {
     @State private var inputText = ""
     @State private var isProcessing = false
     @State private var isRecording = false
+    @State private var isSpeaking = false
+    @State private var conversationMode = false // continuous voice back-and-forth
     @State private var audioPlayer: AVAudioPlayer?
     @State private var audioRecorder: AVAudioRecorder?
     @State private var sessionId = "palace-\(Int(Date().timeIntervalSince1970))"
@@ -119,17 +121,43 @@ struct MarlinView: View {
 
     private var inputBar: some View {
         HStack(spacing: 8) {
-            if isRecording {
-                // Recording state — show waveform instead of text field
-                HStack(spacing: 6) {
+            if isSpeaking {
+                // Marlin is speaking — show waveform + end conversation button
+                HStack(spacing: 8) {
+                    Image(systemName: "waveform")
+                        .foregroundStyle(.orange)
+                        .symbolEffect(.variableColor.iterative, options: .repeating)
+                    Text("Marlin is speaking...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        audioPlayer?.stop(); isSpeaking = false; conversationMode = false
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    } label: {
+                        Text("End").font(.caption).fontWeight(.semibold).foregroundStyle(.red)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(.red.opacity(0.1), in: Capsule())
+                    }
+                }
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(.orange.opacity(0.06), in: RoundedRectangle(cornerRadius: 22))
+            } else if isRecording {
+                // Recording — show waveform + stop button
+                HStack(spacing: 8) {
                     RecordingWaveform()
                     Text("Listening...")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
+                    Button {
+                        stopRecording()
+                    } label: {
+                        Image(systemName: "stop.circle.fill").font(.system(size: 28)).foregroundStyle(.red)
+                    }
                 }
                 .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 22))
+                .background(Color.red.opacity(0.06), in: RoundedRectangle(cornerRadius: 22))
             } else {
                 TextField("Message", text: $inputText, axis: .vertical)
                     .lineLimit(1...5)
@@ -217,6 +245,8 @@ struct MarlinView: View {
     private func stopRecording() {
         audioRecorder?.stop(); isRecording = false
         guard let url = audioRecorder?.url, let audioData = try? Data(contentsOf: url) else { return }
+        // Enter conversation mode on first voice interaction
+        conversationMode = true
         withAnimation(.easeOut(duration: 0.2)) { messages.append(ChatMessage(role: .user, text: "...", audioBase64: nil, model: nil, timings: nil)) }
         isProcessing = true
         Task {
@@ -226,12 +256,13 @@ struct MarlinView: View {
                     if let idx = messages.lastIndex(where: { $0.text == "..." }) { messages[idx] = ChatMessage(role: .user, text: r.transcript, audioBase64: nil, model: nil, timings: nil) }
                     withAnimation { messages.append(ChatMessage(role: .marlin, text: r.response, audioBase64: r.audio, model: r.model, timings: r.timings)); isProcessing = false }
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    playAudio(base64: r.audio)
+                    playAudioAndContinue(base64: r.audio)
                 }
             } catch {
                 await MainActor.run {
                     withAnimation { messages.append(ChatMessage(role: .marlin, text: "Voice failed.", audioBase64: nil, model: nil, timings: nil)); isProcessing = false }
                     UINotificationFeedbackGenerator().notificationOccurred(.error)
+                    conversationMode = false
                 }
             }
         }
@@ -240,6 +271,25 @@ struct MarlinView: View {
     private func playAudio(base64: String) {
         guard let data = Data(base64Encoded: base64) else { return }
         audioPlayer = try? AVAudioPlayer(data: data); audioPlayer?.play()
+    }
+
+    /// Play audio and auto-start listening when done (conversation mode)
+    private func playAudioAndContinue(base64: String) {
+        guard let data = Data(base64Encoded: base64) else { return }
+        isSpeaking = true
+        let player = try? AVAudioPlayer(data: data)
+        audioPlayer = player
+        player?.play()
+
+        // When playback ends, auto-listen if in conversation mode
+        let duration = player?.duration ?? 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.3) {
+            isSpeaking = false
+            if conversationMode {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                startRecording()
+            }
+        }
     }
 }
 

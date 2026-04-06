@@ -6,9 +6,26 @@ struct Conversation: Codable, Identifiable {
     let overview: String?
     let emoji: String?
     let category: String?
-    let startedAt: String
+    let startedAt: String?
     let finishedAt: String?
     let sessionType: String?
+
+    // Accept and ignore unknown keys from the API
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        title = try c.decodeIfPresent(String.self, forKey: .title)
+        overview = try c.decodeIfPresent(String.self, forKey: .overview)
+        emoji = try c.decodeIfPresent(String.self, forKey: .emoji)
+        category = try c.decodeIfPresent(String.self, forKey: .category)
+        startedAt = try c.decodeIfPresent(String.self, forKey: .startedAt)
+        finishedAt = try c.decodeIfPresent(String.self, forKey: .finishedAt)
+        sessionType = try c.decodeIfPresent(String.self, forKey: .sessionType)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, overview, emoji, category, startedAt, finishedAt, sessionType
+    }
 }
 
 struct ConversationDetail: Codable {
@@ -18,14 +35,18 @@ struct ConversationDetail: Codable {
 }
 
 struct Segment: Codable, Identifiable {
-    var id: String { "\(speaker)-\(startedAt)" }
+    var id: String { "\(speaker)-\(startTime)" }
     let text: String
     let speaker: Int
     let speakerLabel: String?
     let speakerName: String?
     let isUser: Bool
-    let startedAt: Double
-    let endedAt: Double
+    let startTime: Double
+    let endTime: Double
+
+    // Convenience for display
+    var startedAt: Double { startTime }
+    var endedAt: Double { endTime }
 }
 
 struct Person: Codable, Identifiable {

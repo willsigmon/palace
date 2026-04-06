@@ -60,7 +60,7 @@ struct ConversationDetailView: View {
                                 .background(.orange.opacity(0.1), in: Capsule())
                         }
                         Spacer()
-                        Text(String(detail.session.startedAt.prefix(16)))
+                        Text(String((detail.session.startedAt ?? "").prefix(16)))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                             .monospacedDigit()
@@ -364,8 +364,8 @@ struct ConversationDetailView: View {
                     speakerLabel: current.speakerLabel,
                     speakerName: current.speakerName ?? seg.speakerName,
                     isUser: current.isUser,
-                    startedAt: current.startedAt,
-                    endedAt: seg.endedAt
+                    startTime: current.startTime,
+                    endTime: seg.endTime
                 )
             } else {
                 result.append(current)

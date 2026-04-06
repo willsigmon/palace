@@ -284,7 +284,7 @@ struct ConversationRow: View {
                         .background(.orange.opacity(0.1), in: Capsule())
                 }
                 Spacer()
-                Text(String(conversation.startedAt.prefix(10)))
+                Text(String((conversation.startedAt ?? "").prefix(10)))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
