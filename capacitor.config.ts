@@ -18,11 +18,19 @@ const config: CapacitorConfig = {
     allowsLinkPreview: false,
   },
   plugins: {
-    Geolocation: {
-      // Request "always" permission for background tracking
-    },
+    Geolocation: {},
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
+    },
+    StatusBar: {
+      style: 'DEFAULT',
+      overlaysWebView: true,
+    },
+    SplashScreen: {
+      launchAutoHide: true,
+      backgroundColor: '#fafafa',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
     },
   },
 }
