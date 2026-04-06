@@ -19,10 +19,18 @@ struct TimelineView: View {
         return f.string(from: selectedDate)
     }
 
+    // Filter to meaningful events (conversations, not raw location pings)
+    private var conversationEvents: [TimelineEvent] {
+        events.filter { $0.type == "conversation" }
+    }
+
+    private var locationCount: Int {
+        events.filter { $0.type == "location" }.count
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // View mode picker
                 Picker("View", selection: $viewMode) {
                     ForEach(ViewMode.allCases, id: \.self) { Text($0.rawValue) }
                 }
@@ -41,29 +49,56 @@ struct TimelineView: View {
         }
     }
 
-    // MARK: - Diary View
+    // MARK: - Diary
 
     private var diaryView: some View {
         VStack(spacing: 0) {
-            // Date picker
-            DatePicker("Date", selection: $selectedDate, in: ...Date(), displayedComponents: .date)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .padding()
-                .onChange(of: selectedDate) { _, _ in
-                    Task { await loadDay() }
+            // Date row
+            HStack {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.medium))
                 }
 
-            // Day header
+                Spacer()
+
+                DatePicker("", selection: $selectedDate, in: ...Date(), displayedComponents: .date)
+                    .labelsHidden()
+
+                Spacer()
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.body.weight(.medium))
+                }
+                .disabled(Calendar.current.isDateInToday(selectedDate))
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+
+            // Day summary
             HStack {
                 Text(selectedDate, format: .dateTime.weekday(.wide).month(.wide).day())
                     .font(.headline)
                 Spacer()
-                Text("\(events.count) events")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if !conversationEvents.isEmpty || locationCount > 0 {
+                    Text("\(conversationEvents.count) conversations")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    if locationCount > 0 {
+                        Text("  \(locationCount) locations")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 20)
             .padding(.bottom, 8)
 
             Divider()
@@ -73,26 +108,35 @@ struct TimelineView: View {
                 Spacer()
                 ProgressView()
                 Spacer()
-            } else if events.isEmpty {
+            } else if conversationEvents.isEmpty {
                 ContentUnavailableView(
                     "Nothing recorded",
                     systemImage: "calendar.badge.minus",
-                    description: Text("No conversations or events on this day.")
+                    description: Text("No conversations on this day.")
                 )
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(events) { event in
+                List(conversationEvents) { event in
+                    if let id = event.data.id {
+                        NavigationLink(value: id) {
                             DayEventRow(event: event)
                         }
+                    } else {
+                        DayEventRow(event: event)
                     }
                 }
+                .listStyle(.plain)
+                .navigationDestination(for: Int.self) { id in
+                    ConversationDetailView(conversationId: id)
+                }
             }
+        }
+        .onChange(of: selectedDate) { _, _ in
+            Task { await loadDay() }
         }
         .task { await loadDay() }
     }
 
-    // MARK: - List View
+    // MARK: - List
 
     private var listView: some View {
         List {
@@ -107,7 +151,7 @@ struct TimelineView: View {
                 }
             }
 
-            Section {
+            Section("Recent") {
                 ForEach(recentConversations) { convo in
                     NavigationLink(value: convo.id) {
                         ConversationRow(conversation: convo)
@@ -129,9 +173,7 @@ struct TimelineView: View {
         do {
             let response = try await APIClient.shared.getTimeline(date: dateString)
             events = response.events
-        } catch {
-            events = []
-        }
+        } catch { events = [] }
         loading = false
     }
 
@@ -151,78 +193,52 @@ struct DayEventRow: View {
     let event: TimelineEvent
 
     private var timeLabel: String {
-        // Extract HH:mm from "2026-04-04 14:23:00.000"
         let parts = event.time.split(separator: " ")
-        if parts.count >= 2 {
-            let timePart = parts[1]
-            return String(timePart.prefix(5))
-        }
-        return ""
+        guard parts.count >= 2 else { return "" }
+        return String(parts[1].prefix(5))
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Time column
-            Text(timeLabel)
-                .font(.caption)
-                .fontWeight(.medium)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .frame(width: 44, alignment: .trailing)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top) {
+                Text(timeLabel)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(width: 44, alignment: .leading)
 
-            // Timeline dot + line
-            VStack(spacing: 0) {
-                Circle()
-                    .fill(colorForType)
-                    .frame(width: 8, height: 8)
-                    .padding(.top, 6)
-                Rectangle()
-                    .fill(.quaternary)
-                    .frame(width: 1)
-            }
+                VStack(alignment: .leading, spacing: 3) {
+                    if let title = event.data.title, !title.isEmpty {
+                        Text(title)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .lineLimit(2)
+                    } else {
+                        Text("Untitled conversation")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
 
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                if let title = event.data.title, !title.isEmpty {
-                    Text(title)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                } else {
-                    Text(event.type.capitalized)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                if let overview = event.data.overview, !overview.isEmpty {
-                    Text(overview)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                }
-
-                if let cat = event.data.category {
-                    Text(cat)
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.orange.opacity(0.1), in: Capsule())
+                    if let overview = event.data.overview, !overview.isEmpty {
+                        Text(overview)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
                 }
             }
-            .padding(.vertical, 8)
 
-            Spacer()
+            if let cat = event.data.category {
+                Text(cat)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.orange.opacity(0.1), in: Capsule())
+            }
         }
-        .padding(.horizontal)
-    }
-
-    private var colorForType: Color {
-        switch event.type {
-        case "conversation": .orange
-        case "memory": .purple
-        case "location": .green
-        default: .gray
-        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -260,19 +276,13 @@ struct ConversationRow: View {
                         .background(.orange.opacity(0.1), in: Capsule())
                 }
                 Spacer()
-                Text(formatDate(conversation.startedAt))
+                Text(String(conversation.startedAt.prefix(10)))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .monospacedDigit()
             }
         }
         .padding(.vertical, 2)
-    }
-
-    private func formatDate(_ str: String) -> String {
-        let parts = str.split(separator: " ")
-        if parts.count >= 1 { return String(parts[0]) }
-        return str
     }
 }
 
@@ -303,24 +313,22 @@ struct ConversationDetailView: View {
     var body: some View {
         Group {
             if let detail {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(detail.segments) { seg in
-                            HStack(alignment: .top, spacing: 8) {
-                                Text(seg.speakerName ?? seg.speakerLabel ?? "Speaker \(seg.speaker)")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(seg.isUser ? .orange : .secondary)
-                                    .frame(width: 60, alignment: .trailing)
+                List {
+                    ForEach(detail.segments) { seg in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(seg.speakerName ?? seg.speakerLabel ?? (seg.isUser ? "You" : "Speaker \(seg.speaker)"))
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(seg.isUser ? .orange : .secondary)
 
-                                Text(seg.text)
-                                    .font(.subheadline)
-                                    .textSelection(.enabled)
-                            }
+                            Text(seg.text)
+                                .font(.subheadline)
+                                .textSelection(.enabled)
                         }
+                        .padding(.vertical, 2)
                     }
-                    .padding()
                 }
+                .listStyle(.plain)
                 .navigationTitle(detail.session.title ?? "Conversation")
                 .navigationBarTitleDisplayMode(.inline)
             } else if loading {
