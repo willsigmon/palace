@@ -305,39 +305,4 @@ struct StatBadge: View {
     }
 }
 
-struct ConversationDetailView: View {
-    let conversationId: Int
-    @State private var detail: ConversationDetail?
-    @State private var loading = true
-
-    var body: some View {
-        Group {
-            if let detail {
-                List {
-                    ForEach(detail.segments) { seg in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(seg.speakerName ?? seg.speakerLabel ?? (seg.isUser ? "You" : "Speaker \(seg.speaker)"))
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(seg.isUser ? .orange : .secondary)
-
-                            Text(seg.text)
-                                .font(.subheadline)
-                                .textSelection(.enabled)
-                        }
-                        .padding(.vertical, 2)
-                    }
-                }
-                .listStyle(.plain)
-                .navigationTitle(detail.session.title ?? "Conversation")
-                .navigationBarTitleDisplayMode(.inline)
-            } else if loading {
-                ProgressView()
-            }
-        }
-        .task {
-            do { detail = try await APIClient.shared.getConversation(id: conversationId) } catch {}
-            loading = false
-        }
-    }
-}
+// ConversationDetailView is in its own file
