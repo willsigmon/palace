@@ -16,6 +16,7 @@ settings:
     INFOPLIST_KEY_NSMicrophoneUsageDescription: "PALACE uses your microphone for voice conversations with Marlin."
     INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "PALACE uses your location to log where your conversations happen."
     INFOPLIST_KEY_NSContactsUsageDescription: "PALACE matches your contacts to show photos next to people in your conversations."
+    INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "PALACE uses speech recognition for live voice conversations with Marlin."
 targets:
   PALACE:
     type: application

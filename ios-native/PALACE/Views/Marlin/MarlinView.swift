@@ -4,19 +4,17 @@ import AVFoundation
 struct MarlinView: View {
     @State private var messages: [ChatMessage] = []
     @State private var inputText = ""
-    @State private var isRecording = false
     @State private var isProcessing = false
-    @State private var audioRecorder: AVAudioRecorder?
+    @State private var isRecording = false
     @State private var audioPlayer: AVAudioPlayer?
+    @State private var audioRecorder: AVAudioRecorder?
     @State private var sessionId = "palace-\(Int(Date().timeIntervalSince1970))"
     @FocusState private var inputFocused: Bool
 
-    private let examples = [
-        "Who is Carter?",
-        "What's the Kyndred status?",
-        "Tell me about my family",
-        "What happened last Tuesday?",
-        "Who do I talk to the most?",
+    private let starters = [
+        "What's up?", "Tell me something interesting",
+        "Who did I talk to today?", "What's the Kyndred status?",
+        "Anything I should remember?",
     ]
 
     var body: some View {
@@ -24,134 +22,112 @@ struct MarlinView: View {
             VStack(spacing: 0) {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(spacing: 20) {
-                            if messages.isEmpty {
-                                emptyState
-                                    .transition(.opacity)
-                            }
-
+                        LazyVStack(spacing: 4) {
+                            if messages.isEmpty { emptyState }
                             ForEach(messages) { msg in
-                                MessageBubble(message: msg)
+                                ChatBubble(message: msg, onReplay: playAudio)
                                     .id(msg.id)
                             }
-
-                            if isProcessing {
-                                thinkingIndicator
-                                    .id("thinking")
-                            }
+                            if isProcessing { typingIndicator.id("typing") }
                         }
-                        .padding(.vertical, 12)
-                        .animation(.easeOut(duration: 0.25), value: messages.count)
+                        .padding(.vertical, 8)
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .onChange(of: messages.count) {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            if let lastId = messages.last?.id {
-                                proxy.scrollTo(lastId, anchor: .bottom)
-                            }
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            if let last = messages.last { proxy.scrollTo(last.id, anchor: .bottom) }
                         }
                     }
-                    .onChange(of: isProcessing) { _, processing in
-                        if processing {
-                            withAnimation { proxy.scrollTo("thinking", anchor: .bottom) }
-                        }
+                    .onChange(of: isProcessing) { _, on in
+                        if on { withAnimation { proxy.scrollTo("typing", anchor: .bottom) } }
                     }
                 }
 
                 Divider()
                 inputBar
             }
-            .navigationTitle("Marlin")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 6) {
+                        MarlinAvatarView(size: 24)
+                        Text("Marlin").font(.headline)
+                    }
+                }
+            }
         }
     }
 
-    // MARK: - Empty State
+    // MARK: - Empty
 
     private var emptyState: some View {
-        VStack(spacing: 24) {
-            Spacer().frame(height: 20)
-
-            VStack(spacing: 6) {
-                Text("Ask anything about your life.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Text("Type or tap the mic.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+        VStack(spacing: 28) {
+            Spacer().frame(height: 60)
+            MarlinAvatarView(size: 64)
+                .shadow(color: .orange.opacity(0.3), radius: 20)
+            VStack(spacing: 4) {
+                Text("Hey Will").font(.title3).fontWeight(.semibold)
+                Text("What's on your mind?").font(.subheadline).foregroundStyle(.secondary)
             }
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(examples, id: \.self) { q in
+            VStack(spacing: 6) {
+                ForEach(starters, id: \.self) { q in
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        askText(q)
+                        sendMessage(q)
                     } label: {
                         Text(q)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
+                            .font(.subheadline)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal, 16).padding(.vertical, 11)
+                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 24)
         }
     }
 
-    // MARK: - Thinking
+    // MARK: - Typing
 
-    private var thinkingIndicator: some View {
-        HStack(spacing: 10) {
+    private var typingIndicator: some View {
+        HStack(alignment: .bottom, spacing: 8) {
             Circle()
                 .fill(LinearGradient(colors: [.orange, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 28, height: 28)
-                .overlay(Text("M").font(.system(size: 11, weight: .bold)).foregroundStyle(.white))
-
-            HStack(spacing: 4) {
+                .frame(width: 24, height: 24)
+                .overlay(Text("M").font(.system(size: 9, weight: .heavy)).foregroundStyle(.white))
+            HStack(spacing: 5) {
                 ForEach(0..<3, id: \.self) { i in
-                    Circle()
-                        .fill(.secondary)
-                        .frame(width: 6, height: 6)
-                        .opacity(0.4)
-                        .animation(
-                            .easeInOut(duration: 0.5)
-                                .repeatForever()
-                                .delay(Double(i) * 0.15),
-                            value: isProcessing
-                        )
-                        .scaleEffect(isProcessing ? 1.3 : 0.8)
+                    Circle().fill(Color.secondary.opacity(0.5)).frame(width: 7, height: 7)
+                        .scaleEffect(isProcessing ? 1.0 : 0.5)
+                        .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.15), value: isProcessing)
                 }
             }
-
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
             Spacer()
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 12)
     }
 
-    // MARK: - Input Bar
+    // MARK: - Input
 
     private var inputBar: some View {
-        HStack(spacing: 10) {
-            TextField("What would you like to know?", text: $inputText, axis: .vertical)
-                .lineLimit(1...4)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22))
+        HStack(spacing: 8) {
+            TextField("Message", text: $inputText, axis: .vertical)
+                .lineLimit(1...5)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 22))
                 .focused($inputFocused)
                 .submitLabel(.send)
-                .onSubmit { askText(inputText) }
+                .onSubmit { if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { sendMessage(inputText) } }
                 .disabled(isProcessing)
 
-            // Mic
             Button {
                 if isRecording { stopRecording() } else { startRecording() }
             } label: {
                 Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
-                    .font(.system(size: 36))
+                    .font(.system(size: 34))
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(isRecording ? .red : .orange)
                     .contentTransition(.symbolEffect(.replace))
@@ -159,52 +135,39 @@ struct MarlinView: View {
             .sensoryFeedback(.impact(flexibility: .rigid, intensity: 0.7), trigger: isRecording)
             .disabled(isProcessing)
 
-            // Send
             if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    askText(inputText)
+                    sendMessage(inputText)
                 } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(.orange)
+                    Image(systemName: "arrow.up.circle.fill").font(.system(size: 30)).foregroundStyle(.orange)
                 }
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 10).padding(.vertical, 8)
         .background(.bar)
         .animation(.easeOut(duration: 0.15), value: inputText.isEmpty)
     }
 
-    // MARK: - Text Ask
+    // MARK: - Send (fast /api/chat)
 
-    private func askText(_ question: String) {
-        let q = question.trimmingCharacters(in: .whitespacesAndNewlines)
+    private func sendMessage(_ text: String) {
+        let q = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return }
-        inputText = ""
-        inputFocused = false
-
-        withAnimation { messages.append(ChatMessage(role: .user, text: q, audioBase64: nil, model: nil, timings: nil)) }
+        inputText = ""; inputFocused = false
+        withAnimation(.easeOut(duration: 0.2)) { messages.append(ChatMessage(role: .user, text: q, audioBase64: nil, model: nil, timings: nil)) }
         isProcessing = true
-
         Task {
             do {
-                let response = try await APIClient.shared.ask(question: q)
+                let r = try await MarlinClient.shared.chat(message: q, sessionId: sessionId)
                 await MainActor.run {
-                    withAnimation {
-                        messages.append(ChatMessage(role: .marlin, text: response.answer, audioBase64: nil, model: nil, timings: nil))
-                        isProcessing = false
-                    }
+                    withAnimation(.easeOut(duration: 0.2)) { messages.append(ChatMessage(role: .marlin, text: r.response, audioBase64: nil, model: r.model, timings: nil)); isProcessing = false }
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                 }
             } catch {
                 await MainActor.run {
-                    withAnimation {
-                        messages.append(ChatMessage(role: .marlin, text: "Couldn't connect. Is the API running?", audioBase64: nil, model: nil, timings: nil))
-                        isProcessing = false
-                    }
+                    withAnimation { messages.append(ChatMessage(role: .marlin, text: "Can't reach Marlin right now.", audioBase64: nil, model: nil, timings: nil)); isProcessing = false }
                     UINotificationFeedbackGenerator().notificationOccurred(.error)
                 }
             }
@@ -222,60 +185,34 @@ struct MarlinView: View {
 
         AVAudioApplication.requestRecordPermission { granted in
             guard granted else { return }
-
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("marlin_recording.wav")
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("marlin_voice.wav")
             let settings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatLinearPCM),
-                AVSampleRateKey: 16000,
-                AVNumberOfChannelsKey: 1,
-                AVLinearPCMBitDepthKey: 16,
-                AVLinearPCMIsFloatKey: false,
+                AVFormatIDKey: Int(kAudioFormatLinearPCM), AVSampleRateKey: 16000,
+                AVNumberOfChannelsKey: 1, AVLinearPCMBitDepthKey: 16, AVLinearPCMIsFloatKey: false,
             ]
-
-            do {
-                audioRecorder = try AVAudioRecorder(url: url, settings: settings)
-                audioRecorder?.record()
-                DispatchQueue.main.async { isRecording = true }
-            } catch {}
+            audioRecorder = try? AVAudioRecorder(url: url, settings: settings)
+            audioRecorder?.record()
+            DispatchQueue.main.async { isRecording = true }
         }
     }
 
     private func stopRecording() {
-        audioRecorder?.stop()
-        isRecording = false
-
-        guard let url = audioRecorder?.url,
-              let audioData = try? Data(contentsOf: url) else { return }
-
-        withAnimation {
-            messages.append(ChatMessage(role: .user, text: "...", audioBase64: nil, model: nil, timings: nil))
-        }
+        audioRecorder?.stop(); isRecording = false
+        guard let url = audioRecorder?.url, let audioData = try? Data(contentsOf: url) else { return }
+        withAnimation(.easeOut(duration: 0.2)) { messages.append(ChatMessage(role: .user, text: "...", audioBase64: nil, model: nil, timings: nil)) }
         isProcessing = true
-
         Task {
             do {
-                let response = try await MarlinClient.shared.sendVoice(audioData: audioData, sessionId: sessionId)
+                let r = try await MarlinClient.shared.sendVoice(audioData: audioData, sessionId: sessionId)
                 await MainActor.run {
-                    // Replace "..." with transcript
-                    if let idx = messages.lastIndex(where: { $0.role == .user && $0.text == "..." }) {
-                        messages[idx] = ChatMessage(role: .user, text: response.transcript, audioBase64: nil, model: nil, timings: nil)
-                    }
-                    withAnimation {
-                        messages.append(ChatMessage(
-                            role: .marlin, text: response.response,
-                            audioBase64: response.audio, model: response.model, timings: response.timings
-                        ))
-                        isProcessing = false
-                    }
+                    if let idx = messages.lastIndex(where: { $0.text == "..." }) { messages[idx] = ChatMessage(role: .user, text: r.transcript, audioBase64: nil, model: nil, timings: nil) }
+                    withAnimation { messages.append(ChatMessage(role: .marlin, text: r.response, audioBase64: r.audio, model: r.model, timings: r.timings)); isProcessing = false }
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    playAudio(base64: response.audio)
+                    playAudio(base64: r.audio)
                 }
             } catch {
                 await MainActor.run {
-                    withAnimation {
-                        messages.append(ChatMessage(role: .marlin, text: "Voice failed: \(error.localizedDescription)", audioBase64: nil, model: nil, timings: nil))
-                        isProcessing = false
-                    }
+                    withAnimation { messages.append(ChatMessage(role: .marlin, text: "Voice failed.", audioBase64: nil, model: nil, timings: nil)); isProcessing = false }
                     UINotificationFeedbackGenerator().notificationOccurred(.error)
                 }
             }
@@ -284,94 +221,57 @@ struct MarlinView: View {
 
     private func playAudio(base64: String) {
         guard let data = Data(base64Encoded: base64) else { return }
-        do {
-            audioPlayer = try AVAudioPlayer(data: data)
-            audioPlayer?.play()
-        } catch {}
+        audioPlayer = try? AVAudioPlayer(data: data); audioPlayer?.play()
     }
 }
 
-// MARK: - Message Bubble
+// MARK: - Chat Bubble (iMessage style)
 
-struct MessageBubble: View {
+struct ChatBubble: View {
     let message: ChatMessage
-    @State private var isPlaying = false
-    @State private var showDetails = false
-    @State private var player: AVAudioPlayer?
+    var onReplay: ((String) -> Void)?
 
     var body: some View {
-        VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 6) {
-            // Message text
-            Text(message.text)
-                .font(.body)
-                .foregroundStyle(.primary)
-                .textSelection(.enabled)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    message.role == .user
-                        ? Color.orange.opacity(0.12)
-                        : Color(.secondarySystemBackground),
-                    in: RoundedRectangle(cornerRadius: 18)
-                )
+        HStack(alignment: .bottom, spacing: 6) {
+            if message.role == .marlin {
+                MarlinAvatarView(size: 24)
+            } else { Spacer(minLength: 60) }
+
+            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 3) {
+                Text(message.text)
+                    .font(.body)
+                    .foregroundStyle(message.role == .user ? .white : .primary)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(
+                        message.role == .user
+                            ? AnyShapeStyle(LinearGradient(colors: [.orange, Color(red: 0.9, green: 0.4, blue: 0.3)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                            : AnyShapeStyle(Color(.secondarySystemBackground)),
+                        in: RoundedRectangle(cornerRadius: 18)
+                    )
 
                 if message.role == .marlin {
                     HStack(spacing: 8) {
                         if let audio = message.audioBase64 {
-                            Button {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                togglePlayback(audio)
-                            } label: {
-                                Label(isPlaying ? "Stop" : "Play", systemImage: isPlaying ? "stop.fill" : "play.fill")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(.ultraThinMaterial, in: Capsule())
+                            Button { onReplay?(audio) } label: {
+                                Image(systemName: "play.fill").font(.system(size: 10)).foregroundStyle(.secondary)
                             }
                         }
-
-                        if let timings = message.timings {
-                            Button {
-                                UISelectionFeedbackGenerator().selectionChanged()
-                                withAnimation(.easeOut(duration: 0.2)) { showDetails.toggle() }
-                            } label: {
-                                Text("\(timings.total, specifier: "%.1f")s")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                            }
+                        if let model = message.model {
+                            Text(model.replacingOccurrences(of: "gemma4:", with: ""))
+                                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.quaternary)
                         }
                     }
-
-                    if showDetails, let t = message.timings, let m = message.model {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 12) {
-                                Label("STT \(t.stt, specifier: "%.2f")s", systemImage: "waveform")
-                                Label("LLM \(t.llm, specifier: "%.1f")s", systemImage: "brain")
-                                Label("TTS \(t.tts, specifier: "%.2f")s", systemImage: "speaker.wave.2")
-                            }
-                            Text("via \(m)")
-                        }
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .padding(8)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                    }
+                    .padding(.leading, 6)
                 }
+            }
+
+            if message.role == .user {
+                // No avatar for user, just alignment
+            } else { Spacer(minLength: 60) }
         }
         .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
-        .padding(.horizontal)
-    }
-
-    private func togglePlayback(_ base64: String) {
-        if isPlaying { player?.stop(); isPlaying = false; return }
-        guard let data = Data(base64Encoded: base64) else { return }
-        do {
-            player = try AVAudioPlayer(data: data)
-            player?.play()
-            isPlaying = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + (player?.duration ?? 0) + 0.1) { isPlaying = false }
-        } catch {}
+        .padding(.horizontal, 10).padding(.vertical, 1)
     }
 }
