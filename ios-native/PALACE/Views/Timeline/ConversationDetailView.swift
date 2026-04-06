@@ -4,6 +4,7 @@ struct ConversationDetailView: View {
     let conversationId: Int
     @State private var detail: ConversationDetail?
     @State private var loading = true
+    @State private var errorMessage: String?
     @State private var speakerOverrides: [Int: String] = [:]
     @State private var editingSpeaker: Int?
     @State private var editName = ""
@@ -17,16 +18,23 @@ struct ConversationDetailView: View {
             if let detail {
                 conversationContent(detail)
             } else if loading {
-                ProgressView()
+                ProgressView("Loading conversation \(conversationId)...")
             } else {
-                ContentUnavailableView("Not found", systemImage: "doc.questionmark")
+                ContentUnavailableView(
+                    "Couldn't load",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(errorMessage ?? "Conversation \(conversationId) not available")
+                )
             }
         }
         .task {
             do {
                 detail = try await APIClient.shared.getConversation(id: conversationId)
-                people = try await APIClient.shared.getPeople(limit: 200)
-            } catch {}
+                people = (try? await APIClient.shared.getPeople(limit: 200)) ?? []
+            } catch {
+                errorMessage = "\(error)"
+                print("ConversationDetail error for ID \(conversationId): \(error)")
+            }
             loading = false
         }
     }

@@ -12,6 +12,12 @@ struct MoreView: View {
                     }
 
                     NavigationLink {
+                        LocationMapView()
+                    } label: {
+                        Label("Map", systemImage: "map.fill")
+                    }
+
+                    NavigationLink {
                         InsightsView()
                     } label: {
                         Label("Insights", systemImage: "chart.bar.fill")

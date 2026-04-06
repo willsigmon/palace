@@ -152,7 +152,7 @@ struct TimelineView: View {
             }
 
             Section("Recent") {
-                ForEach(recentConversations) { convo in
+                ForEach(recentConversations.filter { $0.title != nil || $0.overview != nil }) { convo in
                     NavigationLink(value: convo.id) {
                         ConversationRow(conversation: convo)
                     }
