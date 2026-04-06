@@ -33,8 +33,40 @@ struct Person: Codable, Identifiable {
     let name: String
     let displayName: String?
     let relationship: String?
+    let relationshipDetail: String?
     let conversationCount: Int?
     let photoPath: String?
+    let phone: String?
+    let email: String?
+    let birthday: String?
+    let gedcomId: String?
+
+    // Filter: GEDCOM entries without phone/email/conversationCount are likely historical/deceased
+    var isLikelyDeceased: Bool {
+        guard gedcomId != nil else { return false }
+        // Has GEDCOM ID but no phone, no email, and no conversation count = genealogy-only
+        return phone == nil && email == nil && (conversationCount ?? 0) == 0
+    }
+
+    var isPhoneNumberOnly: Bool {
+        name.hasPrefix("+") || name.allSatisfy { $0.isNumber || $0 == "+" || $0 == "-" || $0 == " " || $0 == "(" || $0 == ")" }
+    }
+
+    var groupKey: String {
+        relationship ?? "other"
+    }
+
+    var displayLabel: String {
+        displayName ?? name
+    }
+
+    var initials: String {
+        let parts = displayLabel.split(separator: " ")
+        if parts.count >= 2 {
+            return String(parts[0].prefix(1) + parts[1].prefix(1)).uppercased()
+        }
+        return String(displayLabel.prefix(2)).uppercased()
+    }
 }
 
 struct Memory: Codable, Identifiable {

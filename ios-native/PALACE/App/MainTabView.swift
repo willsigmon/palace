@@ -23,15 +23,15 @@ struct MainTabView: View {
                 }
                 .tag(2)
 
-            MemoriesView()
-                .tabItem {
-                    Label("Memories", systemImage: "brain.head.profile.fill")
-                }
-                .tag(3)
-
             SearchView()
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
+                }
+                .tag(3)
+
+            MoreView()
+                .tabItem {
+                    Label("More", systemImage: "ellipsis.circle.fill")
                 }
                 .tag(4)
         }

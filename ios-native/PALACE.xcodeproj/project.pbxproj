@@ -16,6 +16,7 @@
 		7AF0B17E3EE59BEB0AF23B67 /* MarlinClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE834261177AF6E334B23AA /* MarlinClient.swift */; };
 		857B7EF2A259320249BAE213 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28CDF520EB981D48CB0BA913 /* Models.swift */; };
 		91081B028614CBF816A6C8E4 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 634124A8FFCE8B270A9CAC40 /* SearchView.swift */; };
+		94A991501D959444BF20BC2D /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D2288FDF4378FB1B7ED900D /* MoreView.swift */; };
 		B91AFF76F27222CBCE177536 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F9833220CBFE9B28AE37B7 /* APIClient.swift */; };
 /* End PBXBuildFile section */
 
@@ -24,6 +25,7 @@
 		109BADEC5E2C222E3265D7BA /* MemoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoriesView.swift; sourceTree = "<group>"; };
 		1EC8202E8918B8620B20297D /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		28CDF520EB981D48CB0BA913 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		2D2288FDF4378FB1B7ED900D /* MoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreView.swift; sourceTree = "<group>"; };
 		629EB9FA1D027AAA3E7FD48C /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		634124A8FFCE8B270A9CAC40 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		7EE834261177AF6E334B23AA /* MarlinClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarlinClient.swift; sourceTree = "<group>"; };
@@ -34,6 +36,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		27247B29BED24521DE19FE0E /* More */ = {
+			isa = PBXGroup;
+			children = (
+				2D2288FDF4378FB1B7ED900D /* MoreView.swift */,
+			);
+			path = More;
+			sourceTree = "<group>";
+		};
 		614C9877B1344069C6629B65 = {
 			isa = PBXGroup;
 			children = (
@@ -71,6 +81,7 @@
 			children = (
 				F38E1EF1AF601A382B1B59AA /* Marlin */,
 				955E7314A1271C28812ACC1E /* Memories */,
+				27247B29BED24521DE19FE0E /* More */,
 				8689394DE4B09658E5F87472 /* People */,
 				DC809D9938155D7BED8F3BBE /* Search */,
 				8A64D5A63CC9F7720E3FB80D /* Timeline */,
@@ -203,6 +214,7 @@
 				1197BB6AF868D88C768B694E /* MarlinView.swift in Sources */,
 				5AF4B304CE6A6EF04AB1FF9F /* MemoriesView.swift in Sources */,
 				857B7EF2A259320249BAE213 /* Models.swift in Sources */,
+				94A991501D959444BF20BC2D /* MoreView.swift in Sources */,
 				3B33BFB51DCA88D66282BACF /* PALACEApp.swift in Sources */,
 				3D7C739C7B5C18390CF519A7 /* PeopleView.swift in Sources */,
 				91081B028614CBF816A6C8E4 /* SearchView.swift in Sources */,
