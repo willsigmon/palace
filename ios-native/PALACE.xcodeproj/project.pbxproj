@@ -237,6 +237,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PALACE;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSContactsUsageDescription = "PALACE matches your contacts to show photos next to people in your conversations.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "PALACE uses your location to log where your conversations happen.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PALACE uses your microphone for voice conversations with Marlin.";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -280,6 +281,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PALACE;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSContactsUsageDescription = "PALACE matches your contacts to show photos next to people in your conversations.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "PALACE uses your location to log where your conversations happen.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "PALACE uses your microphone for voice conversations with Marlin.";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

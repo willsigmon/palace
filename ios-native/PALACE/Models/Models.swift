@@ -111,7 +111,7 @@ struct TimelineResponse: Codable {
 }
 
 struct TimelineEvent: Codable, Identifiable {
-    var id: String { "\(type)-\(time)" }
+    var id: String { "\(type)-\(time)-\(data.id ?? 0)" }
     let time: String
     let type: String
     let data: TimelineEventData
