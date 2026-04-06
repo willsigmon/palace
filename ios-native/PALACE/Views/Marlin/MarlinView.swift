@@ -300,27 +300,20 @@ struct MessageBubble: View {
     @State private var player: AVAudioPlayer?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            if message.role == .marlin {
-                Circle()
-                    .fill(LinearGradient(colors: [.orange, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 28, height: 28)
-                    .overlay(Text("M").font(.system(size: 11, weight: .bold)).foregroundStyle(.white))
-            }
-
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 6) {
-                Text(message.text)
-                    .font(.subheadline)
-                    .foregroundStyle(message.role == .user ? .secondary : .primary)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        message.role == .user
-                            ? AnyShapeStyle(.ultraThinMaterial)
-                            : AnyShapeStyle(.clear),
-                        in: RoundedRectangle(cornerRadius: 16)
-                    )
+        VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 6) {
+            // Message text
+            Text(message.text)
+                .font(.body)
+                .foregroundStyle(.primary)
+                .textSelection(.enabled)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    message.role == .user
+                        ? Color.orange.opacity(0.12)
+                        : Color(.secondarySystemBackground),
+                    in: RoundedRectangle(cornerRadius: 18)
+                )
 
                 if message.role == .marlin {
                     HStack(spacing: 8) {
@@ -366,16 +359,8 @@ struct MessageBubble: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                     }
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
-
-            if message.role == .user {
-                Circle()
-                    .fill(.quaternary)
-                    .frame(width: 28, height: 28)
-                    .overlay(Text("W").font(.system(size: 11, weight: .bold)).foregroundStyle(.secondary))
-            }
         }
+        .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
         .padding(.horizontal)
     }
 
