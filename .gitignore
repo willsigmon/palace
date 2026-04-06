@@ -44,3 +44,5 @@ target/
 src-tauri/target/
 ios/App/Pods/
 ios/App/build/
+ios-native/PALACE.xcodeproj/xcuserdata/
+ios-native/PALACE.xcodeproj/project.xcworkspace/xcuserdata/
