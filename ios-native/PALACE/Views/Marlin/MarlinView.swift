@@ -88,40 +88,58 @@ struct MarlinView: View {
         }
     }
 
-    // MARK: - Typing
+    // MARK: - Thinking Indicator
 
     private var typingIndicator: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            Circle()
-                .fill(LinearGradient(colors: [.orange, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 24, height: 24)
-                .overlay(Text("M").font(.system(size: 9, weight: .heavy)).foregroundStyle(.white))
-            HStack(spacing: 5) {
-                ForEach(0..<3, id: \.self) { i in
-                    Circle().fill(Color.secondary.opacity(0.5)).frame(width: 7, height: 7)
-                        .scaleEffect(isProcessing ? 1.0 : 0.5)
-                        .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.15), value: isProcessing)
-                }
+            MarlinAvatarView(size: 24)
+                .scaleEffect(1.0)
+                .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: isProcessing)
+
+            VStack(alignment: .leading, spacing: 6) {
+                ThinkingDots()
+
+                Text("Marlin is thinking...")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+
             Spacer()
         }
         .padding(.horizontal, 12)
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.9, anchor: .leading)),
+            removal: .opacity
+        ))
     }
 
     // MARK: - Input
 
     private var inputBar: some View {
         HStack(spacing: 8) {
-            TextField("Message", text: $inputText, axis: .vertical)
-                .lineLimit(1...5)
+            if isRecording {
+                // Recording state — show waveform instead of text field
+                HStack(spacing: 6) {
+                    RecordingWaveform()
+                    Text("Listening...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
                 .padding(.horizontal, 14).padding(.vertical, 10)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 22))
-                .focused($inputFocused)
-                .submitLabel(.send)
-                .onSubmit { if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { sendMessage(inputText) } }
-                .disabled(isProcessing)
+                .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 22))
+            } else {
+                TextField("Message", text: $inputText, axis: .vertical)
+                    .lineLimit(1...5)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 22))
+                    .focused($inputFocused)
+                    .submitLabel(.send)
+                    .onSubmit { if !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { sendMessage(inputText) } }
+                    .disabled(isProcessing)
+            }
 
             Button {
                 if isRecording { stopRecording() } else { startRecording() }

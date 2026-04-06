@@ -45,6 +45,9 @@ struct TimelineView: View {
                 }
             }
             .navigationTitle("Timeline")
+            .navigationDestination(for: Int.self) { id in
+                ConversationDetailView(conversationId: id)
+            }
             .task { await loadAll() }
         }
     }
@@ -125,9 +128,6 @@ struct TimelineView: View {
                     }
                 }
                 .listStyle(.plain)
-                .navigationDestination(for: Int.self) { id in
-                    ConversationDetailView(conversationId: id)
-                }
             }
         }
         .onChange(of: selectedDate) { _, _ in
@@ -160,9 +160,6 @@ struct TimelineView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationDestination(for: Int.self) { id in
-            ConversationDetailView(conversationId: id)
-        }
         .refreshable { await loadAll() }
     }
 
@@ -253,13 +250,24 @@ struct ConversationRow: View {
                 if let emoji = conversation.emoji {
                     Text(emoji)
                 }
-                Text(conversation.title ?? "Untitled")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+                if let title = conversation.title, !title.isEmpty {
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                } else if let overview = conversation.overview, !overview.isEmpty {
+                    // No title — use overview as title
+                    Text(overview)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                } else {
+                    Text("Conversation")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
 
-            if let overview = conversation.overview {
+            if conversation.title != nil, let overview = conversation.overview, !overview.isEmpty {
                 Text(overview)
                     .font(.caption)
                     .foregroundStyle(.secondary)

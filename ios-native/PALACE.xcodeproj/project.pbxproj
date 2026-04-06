@@ -20,6 +20,7 @@
 		B91AFF76F27222CBCE177536 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F9833220CBFE9B28AE37B7 /* APIClient.swift */; };
 		C2C098565FDF305AABD7C1FA /* MarlinAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98E7C7D7D7055D3FC0402B1D /* MarlinAvatarView.swift */; };
 		EAFA0D0A5ECB0BB8638FD614 /* ConversationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C81D5DCDB71B758D337E85 /* ConversationDetailView.swift */; };
+		EED25EC5D1BFFE5B1EC64652 /* ThinkingDots.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9BED761EC9854C18E23E221 /* ThinkingDots.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		A5C81D5DCDB71B758D337E85 /* ConversationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationDetailView.swift; sourceTree = "<group>"; };
 		B6F9833220CBFE9B28AE37B7 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		E3E39BC58472D8EBEC85153C /* PeopleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeopleView.swift; sourceTree = "<group>"; };
+		E9BED761EC9854C18E23E221 /* ThinkingDots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingDots.swift; sourceTree = "<group>"; };
 		F7886BABB2EE012C4C812C4D /* MarlinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarlinView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -135,6 +137,7 @@
 			children = (
 				98E7C7D7D7055D3FC0402B1D /* MarlinAvatarView.swift */,
 				F7886BABB2EE012C4C812C4D /* MarlinView.swift */,
+				E9BED761EC9854C18E23E221 /* ThinkingDots.swift */,
 			);
 			path = Marlin;
 			sourceTree = "<group>";
@@ -226,6 +229,7 @@
 				3B33BFB51DCA88D66282BACF /* PALACEApp.swift in Sources */,
 				3D7C739C7B5C18390CF519A7 /* PeopleView.swift in Sources */,
 				91081B028614CBF816A6C8E4 /* SearchView.swift in Sources */,
+				EED25EC5D1BFFE5B1EC64652 /* ThinkingDots.swift in Sources */,
 				0574665DEAC1EBA90F78299C /* TimelineView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
