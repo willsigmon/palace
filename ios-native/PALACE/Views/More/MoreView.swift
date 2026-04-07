@@ -88,7 +88,7 @@ struct VoiceSettingsView: View {
                 HStack {
                     Text("Voice API")
                     Spacer()
-                    Text("marlin.sigflix.stream")
+                    Text(PALACEEnvironment.marlinBaseURL.host ?? "marlin")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Circle()
@@ -99,7 +99,7 @@ struct VoiceSettingsView: View {
                 HStack {
                     Text("Data API")
                     Spacer()
-                    Text("api.wsig.me")
+                    Text(PALACEEnvironment.apiBaseURL.host ?? "api")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Circle().fill(.green).frame(width: 8, height: 8)
@@ -119,9 +119,9 @@ struct VoiceSettingsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Voice & Model")
         .task {
-            if let url = URL(string: "https://marlin.sigflix.stream/health") {
-                healthy = (try? await URLSession.shared.data(from: url)).map { $0.1 as? HTTPURLResponse }.flatMap { $0?.statusCode == 200 ? true : nil } ?? false
-            }
+            healthy = (try? await URLSession.shared.data(from: PALACEEnvironment.marlinHealthURL))
+                .map { $0.1 as? HTTPURLResponse }
+                .flatMap { $0?.statusCode == 200 ? true : nil } ?? false
             checking = false
         }
     }

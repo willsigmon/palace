@@ -1,6 +1,8 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
+import { getPhotoPathForName } from '@/lib/photo-manifest'
 
 /**
  * Avatar with real contact photo fallback to color-coded initials.
@@ -8,7 +10,6 @@ import { useState } from 'react'
  * Initials use grapheme-color synesthesia hue mapping.
  */
 
-// Hue per letter (0-360, oklch hue angle)
 const LETTER_HUE: Record<string, number> = {
   A: 25, B: 250, C: 65, D: 145, E: 15, F: 290, G: 170, H: 40,
   I: 310, J: 200, K: 80, L: 55, M: 350, N: 120, O: 30, P: 270,
@@ -23,12 +24,8 @@ function getHue(letter: string): number {
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/)
   if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0][0].toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
-
-function nameToPhotoPath(name: string): string {
-  return `/photos/${name.trim().toLowerCase().replace(/\s+/g, '-')}.jpg`
+  if (parts.length === 1) return parts[0]?.[0]?.toUpperCase() ?? '?'
+  return `${parts[0]?.[0] ?? ''}${parts[parts.length - 1]?.[0] ?? ''}`.toUpperCase()
 }
 
 interface AvatarProps {
@@ -49,17 +46,18 @@ const SIZE_PX = { sm: 24, md: 32, lg: 40, xl: 56 } as const
 export function Avatar({ name, size = 'md', photoUrl }: AvatarProps) {
   const [imgFailed, setImgFailed] = useState(false)
   const initials = getInitials(name)
-  const hue = getHue(initials[0])
-  const src = photoUrl ?? nameToPhotoPath(name)
+  const hue = getHue(initials[0] ?? 'A')
+  const src = photoUrl ?? getPhotoPathForName(name)
+  const dimension = SIZE_PX[size]
 
-  if (!imgFailed) {
+  if (src && !imgFailed) {
     return (
-      <img
+      <Image
         src={src}
         alt={name}
         title={name}
-        width={SIZE_PX[size]}
-        height={SIZE_PX[size]}
+        width={dimension}
+        height={dimension}
         className={`shrink-0 rounded-full object-cover ${SIZE_CLASSES[size]}`}
         onError={() => setImgFailed(true)}
       />

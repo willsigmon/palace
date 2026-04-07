@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAppStore } from '@/stores/app-store'
@@ -129,13 +129,21 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { sidebarExpanded, toggleSidebar, initTheme } = useAppStore()
-  const vaultDiscovered = useRef(false)
+  const [vaultDiscovered, setVaultDiscovered] = useState(false)
 
   // Initialize theme on mount (reads localStorage, sets up system listener)
   useEffect(() => {
     const cleanup = initTheme()
-    // Check if vault was previously discovered
-    vaultDiscovered.current = localStorage.getItem('palace-vault-discovered') === 'true'
+    const isVaultDiscovered = localStorage.getItem('palace-vault-discovered') === 'true'
+    if (isVaultDiscovered) {
+      const frame = window.requestAnimationFrame(() => {
+        setVaultDiscovered(true)
+      })
+      return () => {
+        window.cancelAnimationFrame(frame)
+        cleanup()
+      }
+    }
     return cleanup
   }, [initTheme])
 
@@ -148,7 +156,7 @@ export function Sidebar() {
     if (clickTimesRef.current.length >= 3) {
       clickTimesRef.current = []
       localStorage.setItem('palace-vault-discovered', 'true')
-      vaultDiscovered.current = true
+      setVaultDiscovered(true)
       router.push('/vault')
       return
     }
@@ -213,7 +221,7 @@ export function Sidebar() {
         })}
 
         {/* Ghost vault link — appears after discovery */}
-        {vaultDiscovered.current && (
+        {vaultDiscovered && (
           <Link
             href="/vault"
             className={`

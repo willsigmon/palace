@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getRuntimeConfig, resolveRuntimeUrl } from '@/lib/runtime-config'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
-const API_TOKEN = process.env.API_TOKEN ?? process.env.NEXT_PUBLIC_API_TOKEN ?? ''
 const NTFY_TOPIC = 'palace-digest'
 const NTFY_BASE = 'https://ntfy.sh'
 
@@ -16,26 +15,24 @@ interface DigestResponse {
 }
 
 export async function GET() {
-  // Fetch digest from wsigomi
-  const digestUrl = new URL('/api/digest', API_BASE)
+  const runtime = getRuntimeConfig()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
-  if (API_TOKEN) {
-    headers['Authorization'] = `Bearer ${API_TOKEN}`
+
+  if (runtime.apiToken) {
+    headers.Authorization = `Bearer ${runtime.apiToken}`
   }
 
-  const digestRes = await fetch(digestUrl.toString(), { headers })
-  if (!digestRes.ok) {
+  const digestResponse = await fetch(resolveRuntimeUrl(runtime.apiBaseUrl, '/api/digest'), { headers })
+  if (!digestResponse.ok) {
     return NextResponse.json(
-      { ok: false, error: `Digest fetch failed: ${digestRes.statusText}` },
-      { status: 502 }
+      { ok: false, error: `Digest fetch failed: ${digestResponse.statusText}` },
+      { status: 502 },
     )
   }
 
-  const digest = (await digestRes.json()) as DigestResponse
-
-  // Build summary message
+  const digest = (await digestResponse.json()) as DigestResponse
   const topPerson = digest.topPeople?.[0]?.name ?? null
   const highlight = digest.highlights[0]?.title ?? null
 
@@ -47,17 +44,16 @@ export async function GET() {
 
   const message = parts.join(' ')
 
-  // Send to ntfy
-  const ntfyRes = await fetch(`${NTFY_BASE}/${NTFY_TOPIC}`, {
+  const ntfyResponse = await fetch(`${NTFY_BASE}/${NTFY_TOPIC}`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: message,
   })
 
-  if (!ntfyRes.ok) {
+  if (!ntfyResponse.ok) {
     return NextResponse.json(
-      { ok: false, error: `ntfy delivery failed: ${ntfyRes.statusText}` },
-      { status: 502 }
+      { ok: false, error: `ntfy delivery failed: ${ntfyResponse.statusText}` },
+      { status: 502 },
     )
   }
 

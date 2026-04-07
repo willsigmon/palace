@@ -1,8 +1,18 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Static export for Capacitor/Tauri builds
   ...(process.env.STATIC_EXPORT === 'true' ? { output: 'export' } : {}),
-};
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'image.tmdb.org',
+        port: '',
+        pathname: '/t/p/**',
+        search: '',
+      },
+    ],
+  },
+}
 
-export default nextConfig;
+export default nextConfig

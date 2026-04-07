@@ -2,19 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import dynamic from 'next/dynamic'
+import { getLocations, type LocationRecord } from '@/lib/api'
 import { formatRelativeTime } from '@/lib/format'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
-
-interface Location {
-  readonly id: number
-  readonly source: string
-  readonly latitude: number
-  readonly longitude: number
-  readonly address: string | null
-  readonly label: string | null
-  readonly timestamp: string
-}
 
 interface ClusterPoint {
   readonly lat: number
@@ -24,16 +13,18 @@ interface ClusterPoint {
   readonly latest: string
 }
 
-function clusterLocations(locs: readonly Location[], precision = 3): readonly ClusterPoint[] {
+function clusterLocations(locs: readonly LocationRecord[], precision = 3): readonly ClusterPoint[] {
   const map = new Map<string, { lat: number; lon: number; count: number; label: string | null; latest: string }>()
   for (const loc of locs) {
     const key = `${loc.latitude.toFixed(precision)},${loc.longitude.toFixed(precision)}`
     const existing = map.get(key)
     if (existing) {
-      existing.count++
+      existing.count += 1
       if (loc.timestamp > existing.latest) {
         existing.latest = loc.timestamp
-        if (loc.label && loc.label !== 'WS' && loc.label !== 'palace-ios') existing.label = loc.label
+        if (loc.label && loc.label !== 'WS' && loc.label !== 'palace-ios') {
+          existing.label = loc.label
+        }
       }
     } else {
       map.set(key, {
@@ -48,7 +39,6 @@ function clusterLocations(locs: readonly Location[], precision = 3): readonly Cl
   return Array.from(map.values())
 }
 
-// Lazy-load the map component (Leaflet needs window)
 const LocationMap = dynamic(() => import('@/components/map/location-map'), {
   ssr: false,
   loading: () => (
@@ -59,17 +49,20 @@ const LocationMap = dynamic(() => import('@/components/map/location-map'), {
 })
 
 export default function LocationsPage() {
-  const [locations, setLocations] = useState<readonly Location[]>([])
+  const [locations, setLocations] = useState<readonly LocationRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<ClusterPoint | null>(null)
   const fetched = useRef(false)
 
   useEffect(() => {
-    if (fetched.current) return
+    if (fetched.current) {
+      return
+    }
     fetched.current = true
-    fetch(`${API_URL}/api/locations?limit=5000`)
-      .then(r => r.json())
-      .then(data => setLocations(Array.isArray(data) ? data : []))
+
+    getLocations(5000)
+      .then((data) => setLocations(data))
+      .catch(() => setLocations([]))
       .finally(() => setLoading(false))
   }, [])
 
@@ -121,32 +114,31 @@ export default function LocationsPage() {
         )}
       </div>
 
-      {/* Frequent locations */}
       <div className="mt-6">
         <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-muted/60">
           Frequent Locations
         </h2>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {clusters
-            .filter(c => c.count > 3)
-            .sort((a, b) => b.count - a.count)
+            .filter((cluster) => cluster.count > 3)
+            .sort((left, right) => right.count - left.count)
             .slice(0, 12)
-            .map((c, i) => (
+            .map((cluster) => (
               <button
-                key={i}
-                onClick={() => setSelected(c)}
+                key={`${cluster.lat}-${cluster.lon}`}
+                onClick={() => setSelected(cluster)}
                 className="flex items-center gap-3 rounded-lg border border-border/20 bg-surface/20 px-4 py-3 text-left transition-all hover:border-border/40 hover:bg-surface/40"
               >
                 <div
                   className="h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: `oklch(0.73 0.20 30 / ${Math.min(1, c.count / 100)})` }}
+                  style={{ backgroundColor: `oklch(0.73 0.20 30 / ${Math.min(1, cluster.count / 100)})` }}
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-medium text-text truncate">
-                    {c.label ?? `${c.lat.toFixed(3)}, ${c.lon.toFixed(3)}`}
+                    {cluster.label ?? `${cluster.lat.toFixed(3)}, ${cluster.lon.toFixed(3)}`}
                   </p>
                   <p className="text-[10px] text-muted/50 font-[family-name:var(--font-mono)]">
-                    {c.count} points · {formatRelativeTime(c.latest)}
+                    {cluster.count} points · {formatRelativeTime(cluster.latest)}
                   </p>
                 </div>
               </button>

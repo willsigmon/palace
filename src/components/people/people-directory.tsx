@@ -34,16 +34,37 @@ function getSource(person: Person): string {
   return 'contact'
 }
 
-function getInitials(name: string): string {
-  const parts = name.split(/\s+/).filter((p) => p.length > 0 && !p.startsWith('+'))
-  if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0]![0]!.toUpperCase()
-  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase()
+type DirectoryPerson = Person & {
+  readonly imessage_count?: number
+  readonly last_message_date?: string | null
+}
+
+function getDirectoryPersonScore(person: DirectoryPerson): number {
+  return [
+    person.conversation_count ?? 0,
+    person.imessage_count ?? 0,
+    person.display_name ? 1 : 0,
+    person.email ? 1 : 0,
+    person.phone ? 1 : 0,
+  ].reduce((sum, value) => sum + value, 0)
+}
+
+function dedupePeopleById(people: readonly DirectoryPerson[]): DirectoryPerson[] {
+  const unique = new Map<number, DirectoryPerson>()
+
+  for (const person of people) {
+    const existing = unique.get(person.id)
+    if (!existing || getDirectoryPersonScore(person) >= getDirectoryPersonScore(existing)) {
+      unique.set(person.id, person)
+    }
+  }
+
+  return Array.from(unique.values())
 }
 
 export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
   const searchParams = useSearchParams()
-  const [people, setPeople] = useState<readonly Person[]>(initialPeople)
+  const [people, setPeople] = useState<readonly DirectoryPerson[]>(initialPeople)
   const [query, setQuery] = useState('')
   const [relationship, setRelationship] = useState('')
   const [loading, setLoading] = useState(false)
@@ -110,7 +131,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
   const grouped = useMemo(() => {
     const phonePattern = /^[\d\s\-().+]+$/
 
-    const filtered = people.filter((person) => {
+    const filtered = dedupePeopleById(people).filter((person) => {
       const name = person.display_name ?? person.name
       if (name.startsWith('+')) return false
       if (/^\d/.test(name) && phonePattern.test(name)) return false
@@ -119,7 +140,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
 
     if (sortMode === 'closest' && identityPeople.length > 0) {
       // Use identity graph data — sorted by combined iMessage + conversation signal
-      const idPeople: Person[] = identityPeople
+      const idPeople = dedupePeopleById(identityPeople
         .filter(ip => {
           const name = ip.display_name ?? ip.name
           if (name.startsWith('+')) return false
@@ -133,8 +154,9 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
           conversation_count: ip.conversation_count,
           imessage_count: ip.imessage_count,
           last_message_date: ip.last_message_date,
-        }) as Person & { imessage_count?: number; last_message_date?: string | null })
-      return [['—', idPeople]] as [string, (Person & { imessage_count?: number; last_message_date?: string | null })[]][]
+        }) as DirectoryPerson)
+      )
+      return [['—', idPeople]] as [string, DirectoryPerson[]][]
     }
 
     if (sortMode === 'conversations') {
@@ -144,10 +166,10 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
         if (cb !== ca) return cb - ca
         return (a.display_name ?? a.name).localeCompare(b.display_name ?? b.name)
       })
-      return [['—', sorted]] as [string, Person[]][]
+      return [['—', sorted]] as [string, DirectoryPerson[]][]
     }
 
-    const groups = new Map<string, Person[]>()
+    const groups = new Map<string, DirectoryPerson[]>()
     for (const person of filtered) {
       const name = person.display_name ?? person.name
       const letter = name[0]?.toUpperCase() ?? '#'
@@ -272,9 +294,9 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
                             b. {person.birthday}
                           </span>
                         )}
-                        {(person as any).imessage_count > 0 && (
+                        {person.imessage_count && person.imessage_count > 0 && (
                           <span className="text-[10px] text-muted/50 font-[family-name:var(--font-mono)]">
-                            {((person as any).imessage_count as number).toLocaleString()} msgs
+                            {person.imessage_count.toLocaleString()} msgs
                           </span>
                         )}
                       </div>

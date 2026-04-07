@@ -14,7 +14,9 @@ pub struct RecordingStatus {
 }
 
 // cpal::Stream is !Send+!Sync, but we only access from main thread via Tauri commands
-struct StreamWrapper(cpal::Stream);
+struct StreamWrapper {
+    _stream: cpal::Stream,
+}
 unsafe impl Send for StreamWrapper {}
 unsafe impl Sync for StreamWrapper {}
 
@@ -120,7 +122,7 @@ pub fn start_recording(source: String) -> Result<String, String> {
 
     stream.play().map_err(|e| e.to_string())?;
 
-    state.stream = Some(StreamWrapper(stream));
+    state.stream = Some(StreamWrapper { _stream: stream });
     state.file_path = Some(file_path_str.clone());
     state.start_time = Some(std::time::Instant::now());
 

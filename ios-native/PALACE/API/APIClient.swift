@@ -1,18 +1,41 @@
 import Foundation
 
+enum PALACEEnvironment {
+    private static let environment = ProcessInfo.processInfo.environment
+
+    static let apiBaseURL = URL(string: environment["PALACE_API_URL"] ?? "https://api.wsig.me")!
+    static let marlinBaseURL = URL(string: environment["PALACE_MARLIN_URL"] ?? "https://marlin.sigflix.stream")!
+
+    static var marlinHealthURL: URL {
+        marlinBaseURL.appendingPathComponent("health")
+    }
+
+    static func apiURL(path: String, queryItems: [URLQueryItem] = []) -> URL {
+        var components = URLComponents(url: apiBaseURL.appendingPathComponent(normalizedPath(path)), resolvingAgainstBaseURL: false)!
+        if !queryItems.isEmpty {
+            components.queryItems = queryItems
+        }
+        return components.url!
+    }
+
+    static func marlinURL(path: String) -> URL {
+        marlinBaseURL.appendingPathComponent(normalizedPath(path))
+    }
+
+    private static func normalizedPath(_ path: String) -> String {
+        path.hasPrefix("/") ? String(path.dropFirst()) : path
+    }
+}
+
 /// wsigomi REST API client
 actor APIClient {
     static let shared = APIClient()
 
-    private let baseURL = URL(string: "https://api.wsig.me")!
     private let decoder = JSONDecoder()
 
     private func request<T: Decodable>(_ path: String, params: [String: String] = [:]) async throws -> T {
-        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
-        if !params.isEmpty {
-            components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
-        }
-        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        let queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
+        let (data, _) = try await URLSession.shared.data(from: PALACEEnvironment.apiURL(path: path, queryItems: queryItems))
         return try decoder.decode(T.self, from: data)
     }
 
@@ -52,7 +75,7 @@ actor APIClient {
     }
 
     func ask(question: String) async throws -> AskResponse {
-        var req = URLRequest(url: baseURL.appendingPathComponent("/api/ask"))
+        var req = URLRequest(url: PALACEEnvironment.apiURL(path: "/api/ask"))
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONEncoder().encode(["question": question])

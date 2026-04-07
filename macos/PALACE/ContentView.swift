@@ -1,8 +1,33 @@
 import SwiftUI
 import WebKit
 
+enum PALACEMacEnvironment {
+    private static let environment = ProcessInfo.processInfo.environment
+
+    static let webAppURLString: String = {
+        if let override = environment["PALACE_WEB_URL"], !override.isEmpty {
+            return override
+        }
+#if DEBUG
+        return "http://localhost:3000"
+#else
+        return "https://palace-tan.vercel.app"
+#endif
+    }()
+
+    static let marlinBaseURL = URL(string: environment["PALACE_MARLIN_URL"] ?? "https://marlin.sigflix.stream")!
+
+    static let voiceURLString = "\(webAppURLString)?voice=1"
+
+    static let allowedHosts: Set<String> = {
+        let webHost = URL(string: webAppURLString)?.host
+        let marlinHost = marlinBaseURL.host
+        return Set([webHost, marlinHost].compactMap { $0 })
+    }()
+}
+
 struct ContentView: View {
-    @State private var urlString = "https://palace-tan.vercel.app"
+    @State private var urlString = PALACEMacEnvironment.webAppURLString
     @State private var isLoading = true
 
     var body: some View {
@@ -36,7 +61,7 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .navigateToVoice)) { _ in
-            urlString = "https://palace-tan.vercel.app/voice"
+            urlString = PALACEMacEnvironment.voiceURLString
         }
     }
 }
@@ -52,6 +77,7 @@ struct PALACEWebView: NSViewRepresentable {
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         webView.isInspectable = true
         webView.allowsBackForwardNavigationGestures = true
         webView.setValue(false, forKey: "drawsBackground")
@@ -75,7 +101,7 @@ struct PALACEWebView: NSViewRepresentable {
         Coordinator(isLoading: $isLoading)
     }
 
-    class Coordinator: NSObject, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         @Binding var isLoading: Bool
         weak var webView: WKWebView?
 
@@ -95,33 +121,35 @@ struct PALACEWebView: NSViewRepresentable {
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
             isLoading = false
         }
+    }
+}
 
-        func webView(
-            _ webView: WKWebView,
-            decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-        ) {
-            // Open external links in default browser
-            if let url = navigationAction.request.url,
-               !url.absoluteString.contains("palace-tan.vercel.app"),
-               !url.absoluteString.contains("marlin.sigflix.stream"),
-               navigationAction.navigationType == .linkActivated {
-                NSWorkspace.shared.open(url)
-                decisionHandler(.cancel)
-                return
-            }
-            decisionHandler(.allow)
+@MainActor
+extension PALACEWebView.Coordinator {
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
+    ) {
+        // Open external links in default browser
+        if let url = navigationAction.request.url,
+           !PALACEMacEnvironment.allowedHosts.contains(url.host ?? ""),
+           navigationAction.navigationType == .linkActivated {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
         }
+        decisionHandler(.allow)
+    }
 
-        // Allow microphone access for Marlin voice
-        func webView(
-            _ webView: WKWebView,
-            requestMediaCapturePermissionFor origin: WKSecurityOrigin,
-            initiatedByFrame frame: WKFrameInfo,
-            type: WKMediaCaptureType,
-            decisionHandler: @escaping (WKPermissionDecision) -> Void
-        ) {
-            decisionHandler(.grant)
-        }
+    // Allow microphone access for Marlin voice
+    func webView(
+        _ webView: WKWebView,
+        requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        type: WKMediaCaptureType,
+        decisionHandler: @escaping @MainActor @Sendable (WKPermissionDecision) -> Void
+    ) {
+        decisionHandler(.grant)
     }
 }

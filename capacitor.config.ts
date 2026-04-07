@@ -1,13 +1,18 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
+const WEB_APP_URL =
+  process.env.CAPACITOR_SERVER_URL
+  ?? process.env.PALACE_WEB_URL
+  ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://palace-tan.vercel.app')
+const ALLOW_CLEARTEXT = WEB_APP_URL.startsWith('http://')
+
 const config: CapacitorConfig = {
   appId: 'com.wsig.palace',
   appName: 'PALACE',
   webDir: 'public',
   server: {
-    // Always load from the live URL — avoids static export issues with dynamic routes
-    url: 'https://palace-tan.vercel.app',
-    cleartext: false,
+    url: WEB_APP_URL,
+    cleartext: ALLOW_CLEARTEXT,
   },
   ios: {
     scheme: 'PALACE',

@@ -2,19 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { formatNumber, formatDuration } from '@/lib/format'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.wsig.me'
-
-interface VaultData {
-  readonly longest_conversation: { id: number; title: string; minutes: number } | null
-  readonly night_owl: { id: number; title: string; time: string } | null
-  readonly most_mentioned_person: { name: string; count: number } | null
-  readonly total_conversations: number
-  readonly total_hours: number
-  readonly random_quote: string | null
-  readonly total_people: number
-  readonly top_category: { category: string; count: number } | null
-}
+import { getStats, getVaultStats, type VaultData } from '@/lib/api'
+import type { StatsResponse } from '@/types/api'
 
 interface StatCardProps {
   readonly label: string
@@ -55,26 +44,24 @@ export function VaultStats() {
   const fetched = useRef(false)
 
   useEffect(() => {
-    if (fetched.current) return
+    if (fetched.current) {
+      return
+    }
     fetched.current = true
 
-    fetch(`${API_URL}/api/vault`)
-      .then((r) => r.json())
-      .then((d: VaultData) => {
-        setData(d)
+    getVaultStats()
+      .catch(async () => buildFallbackData(await getStats().catch(() => null)))
+      .then((result) => {
+        setData(result)
         setLoading(false)
-        // Entrance animation delay
         setTimeout(() => setEntering(false), 300)
         setTimeout(() => setRevealed(true), 600)
       })
       .catch(() => {
-        // Fallback: build partial data from existing endpoints
-        buildFallbackData().then((d) => {
-          setData(d)
-          setLoading(false)
-          setTimeout(() => setEntering(false), 300)
-          setTimeout(() => setRevealed(true), 600)
-        })
+        setData(buildEmptyVaultData())
+        setLoading(false)
+        setTimeout(() => setEntering(false), 300)
+        setTimeout(() => setRevealed(true), 600)
       })
   }, [])
 
@@ -89,13 +76,14 @@ export function VaultStats() {
     )
   }
 
-  if (!data) return null
+  if (!data) {
+    return null
+  }
 
   const stats = buildStats(data)
 
   return (
     <div>
-      {/* Door opening effect */}
       <div
         className="overflow-hidden transition-all duration-700"
         style={{
@@ -103,23 +91,21 @@ export function VaultStats() {
           opacity: entering ? 0 : 1,
         }}
       >
-        {/* Random self-quote */}
         {data.random_quote && (
           <blockquote
             className="mb-10 text-center text-[15px] leading-relaxed text-sub/60 italic font-[family-name:var(--font-serif)] max-w-lg mx-auto transition-opacity duration-500"
             style={{ opacity: revealed ? 1 : 0, transitionDelay: '200ms' }}
           >
-            &ldquo;{data.random_quote.length > 200 ? data.random_quote.slice(0, 200).trimEnd() + '\u2026' : data.random_quote}&rdquo;
+            &ldquo;{data.random_quote.length > 200 ? data.random_quote.slice(0, 200).trimEnd() + '…' : data.random_quote}&rdquo;
             <cite className="mt-2 block text-[10px] text-muted/30 not-italic uppercase tracking-widest">
               &mdash; You, at some point
             </cite>
           </blockquote>
         )}
 
-        {/* Stats grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {stats.map((stat, i) => (
-            <StatCard key={stat.label} {...stat} index={i} visible={revealed} />
+          {stats.map((stat, index) => (
+            <StatCard key={stat.label} {...stat} index={index} visible={revealed} />
           ))}
         </div>
       </div>
@@ -176,30 +162,19 @@ function buildStats(data: VaultData) {
   return stats
 }
 
-async function buildFallbackData(): Promise<VaultData> {
-  try {
-    const res = await fetch(`${API_URL}/api/stats`)
-    const stats = await res.json()
-    return {
-      longest_conversation: null,
-      night_owl: null,
-      most_mentioned_person: null,
-      total_conversations: stats.conversations ?? 0,
-      total_hours: 0,
-      random_quote: null,
-      total_people: stats.enrichment?.people ?? 0,
-      top_category: null,
-    }
-  } catch {
-    return {
-      longest_conversation: null,
-      night_owl: null,
-      most_mentioned_person: null,
-      total_conversations: 0,
-      total_hours: 0,
-      random_quote: null,
-      total_people: 0,
-      top_category: null,
-    }
+function buildFallbackData(stats: StatsResponse | null): VaultData {
+  return {
+    longest_conversation: null,
+    night_owl: null,
+    most_mentioned_person: null,
+    total_conversations: stats?.conversations ?? 0,
+    total_hours: 0,
+    random_quote: null,
+    total_people: stats?.enrichment.people ?? 0,
+    top_category: null,
   }
+}
+
+function buildEmptyVaultData(): VaultData {
+  return buildFallbackData(null)
 }

@@ -33,8 +33,11 @@ struct LocationMapView: View {
     }
 
     private func loadLocations() async {
-        guard let url = URL(string: "https://api.wsig.me/api/locations?limit=500") else { return }
         do {
+            let url = PALACEEnvironment.apiURL(
+                path: "/api/locations",
+                queryItems: [URLQueryItem(name: "limit", value: "500")]
+            )
             let (data, _) = try await URLSession.shared.data(from: url)
             let raw = try JSONDecoder().decode([RawLocation].self, from: data)
 

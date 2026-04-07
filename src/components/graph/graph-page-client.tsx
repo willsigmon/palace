@@ -1,22 +1,12 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { ForceGraph } from './force-graph'
 import { getGraph } from '@/lib/api'
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/types/api'
 
-interface GraphNode {
-  readonly node_id: string
-  readonly label: string
-  readonly node_type: string
-  readonly metadata: string | null
-}
-
-interface GraphEdge {
-  readonly source_node_id: string
-  readonly target_node_id: string
-  readonly label: string
-}
+type GraphNode = KnowledgeGraphNode
+type GraphEdge = KnowledgeGraphEdge
 
 interface GraphPageClientProps {
   readonly initialNodes: readonly GraphNode[]
@@ -37,7 +27,6 @@ export function GraphPageClient({ initialNodes, initialEdges }: GraphPageClientP
   const [centerNodeId, setCenterNodeId] = useState(WILL_NODE_ID)
   const [loading, setLoading] = useState(false)
   const [constellation, setConstellation] = useState(false)
-  const router = useRouter()
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node)

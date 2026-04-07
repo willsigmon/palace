@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAppStore } from '@/stores/app-store'
 
 // Mobile: 5 tabs, Marlin first
 const MOBILE_NAV = [
@@ -70,7 +69,6 @@ const ICONS: Record<string, React.ReactNode> = {
 
 export function MobileNav() {
   const pathname = usePathname()
-  const { theme, cycleTheme } = useAppStore()
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 glass-heavy md:hidden">

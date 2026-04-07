@@ -11,17 +11,21 @@ interface VoiceInputBarProps {
 }
 
 const BAR_COUNT = 7
+const SPEAKING_BAR_HEIGHTS = [12, 18, 24, 16, 14] as const
 
 export function VoiceInputBar({ state, audioLevel, onStop, onCancel }: VoiceInputBarProps) {
   // Animated bar heights via rAF — not from render cycle
   const [bars, setBars] = useState<number[]>(Array(BAR_COUNT).fill(4))
   const rafRef = useRef<number>(0)
   const audioLevelRef = useRef(audioLevel)
-  audioLevelRef.current = audioLevel
+
+  useEffect(() => {
+    audioLevelRef.current = audioLevel
+  }, [audioLevel])
 
   useEffect(() => {
     if (state !== 'listening') {
-      setBars(Array(BAR_COUNT).fill(4))
+      cancelAnimationFrame(rafRef.current)
       return
     }
 
@@ -85,12 +89,12 @@ export function VoiceInputBar({ state, audioLevel, onStop, onCancel }: VoiceInpu
         {state === 'speaking' && (
           <div className="flex items-center gap-2">
             <div className="flex gap-[2px]">
-              {[0, 1, 2, 3, 4].map((i) => (
+              {SPEAKING_BAR_HEIGHTS.map((height, i) => (
                 <div
                   key={i}
                   className="w-[2px] rounded-full bg-serendipity animate-pulse"
                   style={{
-                    height: `${8 + Math.random() * 16}px`,
+                    height: `${height}px`,
                     animationDelay: `${i * 120}ms`,
                   }}
                 />

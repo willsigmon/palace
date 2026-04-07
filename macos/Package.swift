@@ -7,7 +7,11 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "PALACE",
-            path: "PALACE"
+            path: "PALACE",
+            exclude: [
+                "Info.plist",
+                "PALACE.entitlements",
+            ]
         ),
     ]
 )

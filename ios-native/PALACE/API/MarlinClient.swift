@@ -5,8 +5,6 @@ import AVFoundation
 actor MarlinClient {
     static let shared = MarlinClient()
 
-    private let baseURL = URL(string: "https://marlin.sigflix.stream")!
-
     struct VoiceResponse: Decodable {
         let transcript: String
         let response: String
@@ -28,7 +26,7 @@ actor MarlinClient {
     }
 
     func sendVoice(audioData: Data, sessionId: String, voice: String = "am_adam") async throws -> VoiceResponse {
-        var req = URLRequest(url: baseURL.appendingPathComponent("/api/voice"))
+        var req = URLRequest(url: PALACEEnvironment.marlinURL(path: "/api/voice"))
         req.httpMethod = "POST"
 
         let boundary = UUID().uuidString
@@ -59,7 +57,7 @@ actor MarlinClient {
     }
 
     func chat(message: String, sessionId: String) async throws -> ChatResponse {
-        var req = URLRequest(url: baseURL.appendingPathComponent("/api/chat"))
+        var req = URLRequest(url: PALACEEnvironment.marlinURL(path: "/api/chat"))
         req.httpMethod = "POST"
 
         let boundary = UUID().uuidString

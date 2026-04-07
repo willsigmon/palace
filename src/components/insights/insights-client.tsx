@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { PatternsResponse, OnThisDayResponse, SerendipityResponse, DigestResponse } from '@/lib/api'
-import { formatNumber, formatRelativeTime, truncate } from '@/lib/format'
+import { formatNumber, truncate } from '@/lib/format'
 import { Avatar } from '@/components/ui/avatar'
 
 interface InsightsClientProps {

@@ -29,13 +29,6 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
   related_to: 'Related',
 }
 
-function getInitials(name: string): string {
-  const parts = name.split(/\s+/).filter((p) => p.length > 0)
-  if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0]![0]!.toUpperCase()
-  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase()
-}
-
 export function PersonProfile({ data }: PersonProfileProps) {
   const { person, conversations, relationships } = data
   const name = person.display_name ?? person.name

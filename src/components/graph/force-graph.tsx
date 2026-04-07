@@ -1,24 +1,18 @@
 'use client'
 
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
+import { getPhotoPathForName } from '@/lib/photo-manifest'
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/types/api'
 
-interface GraphNode {
-  readonly node_id: string
-  readonly label: string
-  readonly node_type: string
-  readonly metadata: string | null
-  // D3 mutable properties
-  x?: number
-  y?: number
-  fx?: number | null
-  fy?: number | null
-}
+type GraphNode = KnowledgeGraphNode
+type GraphEdge = KnowledgeGraphEdge
 
-interface GraphEdge {
-  readonly source_node_id: string
-  readonly target_node_id: string
-  readonly label: string
+interface MutableGraphNode extends GraphNode, d3.SimulationNodeDatum {}
+
+interface MutableGraphEdge extends GraphEdge, d3.SimulationLinkDatum<MutableGraphNode> {
+  source: MutableGraphNode
+  target: MutableGraphNode
 }
 
 interface ForceGraphProps {
@@ -29,34 +23,164 @@ interface ForceGraphProps {
   readonly constellation?: boolean
 }
 
-const RELATIONSHIP_COLORS: Record<string, string> = {
-  parent_of: '#f59e0b',   // amber
-  child_of: '#22d3ee',    // cyan
-  married_to: '#f472b6',  // pink
-  sibling_of: '#a78bfa',  // purple
+interface GraphColors {
+  readonly nodeFill: string
+  readonly nodeStroke: string
+  readonly nodeLabel: string
+  readonly nodeSublabel: string
+  readonly accentColor: string
 }
 
-function parseMeta(metadata: string | null): Record<string, string> {
-  if (!metadata) return {}
-  try { return JSON.parse(metadata) } catch { return {} }
+interface GraphModel {
+  readonly nodes: MutableGraphNode[]
+  readonly edges: MutableGraphEdge[]
+  readonly connectedIds: Set<string>
+}
+
+interface NetworkSelections {
+  readonly nodeGroups: d3.Selection<SVGGElement, MutableGraphNode, SVGGElement, unknown>
+  readonly edgeLines: d3.Selection<SVGLineElement, MutableGraphEdge, SVGGElement, unknown>
+  readonly edgeLabels: d3.Selection<SVGTextElement, MutableGraphEdge, SVGGElement, unknown>
+}
+
+interface ConstellationSelections {
+  readonly nodeGroups: d3.Selection<SVGGElement, MutableGraphNode, SVGGElement, unknown>
+  readonly edgePaths: d3.Selection<SVGPathElement, MutableGraphEdge, SVGGElement, unknown>
+}
+
+const RELATIONSHIP_COLORS: Record<string, string> = {
+  parent_of: '#f59e0b',
+  child_of: '#22d3ee',
+  married_to: '#f472b6',
+  sibling_of: '#a78bfa',
+}
+
+interface NodeMetadata {
+  readonly birth_date?: string
+}
+
+function parseMeta(metadata: string | null): NodeMetadata {
+  if (!metadata) {
+    return {}
+  }
+
+  try {
+    return JSON.parse(metadata) as NodeMetadata
+  } catch {
+    return {}
+  }
+}
+
+function getGraphColors(): GraphColors {
+  const styles = getComputedStyle(document.documentElement)
+
+  return {
+    nodeFill: styles.getPropertyValue('--color-node-fill').trim() || 'oklch(0.21 0.02 260)',
+    nodeStroke: styles.getPropertyValue('--color-node-stroke').trim() || 'oklch(0.35 0.015 260)',
+    nodeLabel: styles.getPropertyValue('--color-node-label').trim() || 'oklch(0.75 0.01 80)',
+    nodeSublabel: styles.getPropertyValue('--color-node-sublabel').trim() || 'oklch(0.45 0.01 260)',
+    accentColor: styles.getPropertyValue('--color-accent').trim() || 'oklch(0.73 0.20 30)',
+  }
+}
+
+function buildGraphModel(nodes: readonly GraphNode[], edges: readonly GraphEdge[]): GraphModel {
+  const nodeMap = new Map<string, MutableGraphNode>()
+
+  for (const node of nodes) {
+    nodeMap.set(node.node_id, { ...node })
+  }
+
+  const mutableEdges: MutableGraphEdge[] = []
+  const connectedIds = new Set<string>()
+
+  for (const edge of edges) {
+    const source = nodeMap.get(edge.source_node_id)
+    const target = nodeMap.get(edge.target_node_id)
+    if (!source || !target) {
+      continue
+    }
+
+    mutableEdges.push({
+      ...edge,
+      source,
+      target,
+    })
+
+    connectedIds.add(source.node_id)
+    connectedIds.add(target.node_id)
+  }
+
+  return {
+    nodes: Array.from(nodeMap.values()),
+    edges: mutableEdges,
+    connectedIds,
+  }
+}
+
+function getNodeRadius(node: GraphNode, centerNodeId?: string): number {
+  return node.node_id === centerNodeId ? 22 : 16
+}
+
+function getConstellationRadius(node: GraphNode, centerNodeId?: string): number {
+  return node.node_id === centerNodeId ? 6 : 3.5
+}
+
+function truncateLabel(label: string, limit: number): string {
+  return label.length > limit ? `${label.slice(0, limit - 2)}...` : label
+}
+
+function getNodeImageHref(node: GraphNode): string | null {
+  return getPhotoPathForName(node.label)
+}
+
+function sanitizeNodeId(nodeId: string): string {
+  return nodeId.replace(/[^a-zA-Z0-9]/g, '_')
+}
+
+function createDragBehavior(
+  simulation: d3.Simulation<MutableGraphNode, MutableGraphEdge>,
+  centerNodeId?: string,
+): d3.DragBehavior<SVGGElement, MutableGraphNode, MutableGraphNode | d3.SubjectPosition> {
+  return d3.drag<SVGGElement, MutableGraphNode>()
+    .on('start', (event, node) => {
+      if (!event.active) {
+        simulation.alphaTarget(0.2).restart()
+      }
+      node.fx = node.x
+      node.fy = node.y
+    })
+    .on('drag', (event, node) => {
+      node.fx = event.x
+      node.fy = event.y
+    })
+    .on('end', (event, node) => {
+      if (!event.active) {
+        simulation.alphaTarget(0)
+      }
+      if (node.node_id !== centerNodeId) {
+        node.fx = null
+        node.fy = null
+      }
+    })
 }
 
 export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick, constellation = false }: ForceGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const [dimensions, setDimensions] = useState({ width: 900, height: 600 })
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
-  // Responsive sizing
   useEffect(() => {
     function updateSize() {
       const container = svgRef.current?.parentElement
-      if (container) {
-        setDimensions({
-          width: container.clientWidth,
-          height: Math.max(500, container.clientHeight),
-        })
+      if (!container) {
+        return
       }
+
+      setDimensions({
+        width: container.clientWidth,
+        height: Math.max(500, container.clientHeight),
+      })
     }
+
     updateSize()
     window.addEventListener('resize', updateSize)
     return () => window.removeEventListener('resize', updateSize)
@@ -64,138 +188,117 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick, constellat
 
   useEffect(() => {
     const svg = svgRef.current
-    if (!svg || nodes.length === 0) return
-
-    const { width, height } = dimensions
-
-    // Read theme-aware colors from CSS custom properties
-    const cs = getComputedStyle(document.documentElement)
-    const nodeFill = cs.getPropertyValue('--color-node-fill').trim() || 'oklch(0.21 0.02 260)'
-    const nodeStroke = cs.getPropertyValue('--color-node-stroke').trim() || 'oklch(0.35 0.015 260)'
-    const nodeLabel = cs.getPropertyValue('--color-node-label').trim() || 'oklch(0.75 0.01 80)'
-    const nodeSublabel = cs.getPropertyValue('--color-node-sublabel').trim() || 'oklch(0.45 0.01 260)'
-    const accentColor = cs.getPropertyValue('--color-accent').trim() || 'oklch(0.73 0.20 30)'
-
-    // Clear previous
-    d3.select(svg).selectAll('*').remove()
-
-    // Build node map for edge resolution
-    const nodeMap = new Map(nodes.map(n => [n.node_id, { ...n }]))
-    const mutableNodes = Array.from(nodeMap.values())
-
-    // Resolve edges to node objects
-    const mutableEdges = edges
-      .filter(e => nodeMap.has(e.source_node_id) && nodeMap.has(e.target_node_id))
-      .map(e => ({
-        source: e.source_node_id,
-        target: e.target_node_id,
-        label: e.label,
-      }))
-
-    const connectedIds = new Set<string>()
-    for (const e of mutableEdges) {
-      connectedIds.add(e.source as string)
-      connectedIds.add(e.target as string)
+    if (!svg || nodes.length === 0) {
+      return
     }
 
-    const finalNodes = mutableNodes
-    const finalEdges = mutableEdges
+    const { width, height } = dimensions
+    const colors = getGraphColors()
+    const graph = buildGraphModel(nodes, edges)
 
-    // D3 force simulation
-    const simulation = d3.forceSimulation(finalNodes as d3.SimulationNodeDatum[])
-      .force('link', d3.forceLink(finalEdges)
-        .id((d: any) => d.node_id)
-        .distance(constellation ? 100 : 80)
-        .strength(0.8))
-      .force('charge', d3.forceManyBody().strength(constellation ? -200 : -150))
+    d3.select(svg).selectAll('*').remove()
+
+    const simulation = d3.forceSimulation(graph.nodes)
+      .force(
+        'link',
+        d3.forceLink<MutableGraphNode, MutableGraphEdge>(graph.edges)
+          .distance(constellation ? 100 : 80)
+          .strength(0.8),
+      )
+      .force('charge', d3.forceManyBody<MutableGraphNode>().strength(constellation ? -200 : -150))
       .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
-      .force('radial', d3.forceRadial(
-        (d: any) => connectedIds.has(d.node_id) ? 0 : 180,
-        width / 2,
-        height / 2
-      ).strength((d: any) => connectedIds.has(d.node_id) ? 0 : 0.04))
-      .force('collision', d3.forceCollide().radius(constellation ? 20 : 40))
+      .force(
+        'radial',
+        d3.forceRadial<MutableGraphNode>(
+          (node) => (graph.connectedIds.has(node.node_id) ? 0 : 180),
+          width / 2,
+          height / 2,
+        ).strength((node) => (graph.connectedIds.has(node.node_id) ? 0 : 0.04)),
+      )
+      .force('collision', d3.forceCollide<MutableGraphNode>().radius(constellation ? 20 : 40))
 
-    // Pin center node
     if (centerNodeId) {
-      const centerNode = finalNodes.find(n => n.node_id === centerNodeId)
+      const centerNode = graph.nodes.find((node) => node.node_id === centerNodeId)
       if (centerNode) {
         centerNode.fx = width / 2
         centerNode.fy = height / 2
       }
     }
 
-    // SVG setup with zoom
     const svgSelection = d3.select(svg)
       .attr('width', width)
       .attr('height', height)
 
-    const g = svgSelection.append('g')
+    const viewport = svgSelection.append('g')
+    const scene = viewport.append('g')
 
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.3, 3])
       .on('zoom', (event) => {
-        g.attr('transform', event.transform)
+        viewport.attr('transform', event.transform.toString())
       })
 
     svgSelection.call(zoom)
 
-    if (constellation) {
-      renderConstellation(g, finalNodes, finalEdges, connectedIds, centerNodeId, {
-        width, height, accentColor, nodeLabel,
-        onNodeClick, setHoveredNode,
-      })
-    } else {
-      renderNetwork(g, finalNodes, finalEdges, connectedIds, centerNodeId, {
-        width, height, nodeFill, nodeStroke, nodeLabel, nodeSublabel, accentColor,
-        onNodeClick, setHoveredNode,
-      })
-    }
+    const dragBehavior = createDragBehavior(simulation, centerNodeId)
 
-    // Tick
+    const networkSelections = constellation
+      ? null
+      : renderNetwork(scene, graph, centerNodeId, colors, onNodeClick, dragBehavior)
+
+    const constellationSelections = constellation
+      ? renderConstellation(scene, graph, centerNodeId, colors, onNodeClick, dragBehavior)
+      : null
+
     simulation.on('tick', () => {
-      g.selectAll<SVGLineElement, any>('.edge-line')
-        .attr('x1', (d: any) => d.source.x)
-        .attr('y1', (d: any) => d.source.y)
-        .attr('x2', (d: any) => d.target.x)
-        .attr('y2', (d: any) => d.target.y)
+      if (networkSelections) {
+        networkSelections.edgeLines
+          .attr('x1', ({ source }) => source.x ?? 0)
+          .attr('y1', ({ source }) => source.y ?? 0)
+          .attr('x2', ({ target }) => target.x ?? 0)
+          .attr('y2', ({ target }) => target.y ?? 0)
 
-      g.selectAll<SVGPathElement, any>('.edge-curve')
-        .attr('d', (d: any) => {
-          const dx = d.target.x - d.source.x
-          const dy = d.target.y - d.source.y
-          const dr = Math.sqrt(dx * dx + dy * dy) * 1.5
-          return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`
+        networkSelections.edgeLabels
+          .attr('x', ({ source, target }) => ((source.x ?? 0) + (target.x ?? 0)) / 2)
+          .attr('y', ({ source, target }) => ((source.y ?? 0) + (target.y ?? 0)) / 2)
+
+        networkSelections.nodeGroups
+          .attr('transform', (node) => `translate(${node.x ?? width / 2},${node.y ?? height / 2})`)
+      }
+
+      if (constellationSelections) {
+        constellationSelections.edgePaths.attr('d', ({ source, target }) => {
+          const sourceX = source.x ?? 0
+          const sourceY = source.y ?? 0
+          const targetX = target.x ?? 0
+          const targetY = target.y ?? 0
+          const dx = targetX - sourceX
+          const dy = targetY - sourceY
+          const radius = Math.sqrt(dx * dx + dy * dy) * 1.5
+          return `M${sourceX},${sourceY}A${radius},${radius} 0 0,1 ${targetX},${targetY}`
         })
 
-      g.selectAll<SVGTextElement, any>('.edge-label')
-        .attr('x', (d: any) => (d.source.x + d.target.x) / 2)
-        .attr('y', (d: any) => (d.source.y + d.target.y) / 2)
-
-      g.selectAll<SVGGElement, any>('.node-group')
-        .attr('transform', (d: any) => `translate(${d.x},${d.y})`)
+        constellationSelections.nodeGroups
+          .attr('transform', (node) => `translate(${node.x ?? width / 2},${node.y ?? height / 2})`)
+      }
     })
 
-    // Constellation: idle rotation
     let rotationTimer: d3.Timer | null = null
-    if (constellation) {
-      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (!prefersReduced) {
-        let angle = 0
-        rotationTimer = d3.timer(() => {
-          angle += 0.0003
-          const cx = width / 2
-          const cy = height / 2
-          g.attr('transform', `rotate(${angle * (180 / Math.PI)}, ${cx}, ${cy})`)
-        })
-      }
+    if (constellation && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      let angle = 0
+      const cx = width / 2
+      const cy = height / 2
+      rotationTimer = d3.timer(() => {
+        angle += 0.0003
+        scene.attr('transform', `rotate(${angle * (180 / Math.PI)}, ${cx}, ${cy})`)
+      })
     }
 
     return () => {
       simulation.stop()
       rotationTimer?.stop()
     }
-  }, [nodes, edges, dimensions, centerNodeId, onNodeClick, constellation])
+  }, [centerNodeId, constellation, dimensions, edges, nodes, onNodeClick])
 
   return (
     <svg
@@ -212,187 +315,160 @@ export function ForceGraph({ nodes, edges, centerNodeId, onNodeClick, constellat
   )
 }
 
-// === Network Mode (original) ===
-
 function renderNetwork(
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
-  nodes: any[],
-  edges: any[],
-  connectedIds: Set<string>,
+  scene: d3.Selection<SVGGElement, unknown, null, undefined>,
+  graph: GraphModel,
   centerNodeId: string | undefined,
-  opts: any,
-) {
-  const { nodeFill, nodeStroke, nodeLabel, nodeSublabel, accentColor, onNodeClick, setHoveredNode } = opts
+  colors: GraphColors,
+  onNodeClick: ForceGraphProps['onNodeClick'],
+  dragBehavior: d3.DragBehavior<SVGGElement, MutableGraphNode, MutableGraphNode | d3.SubjectPosition>,
+): NetworkSelections {
+  const { nodeFill, nodeStroke, nodeLabel, nodeSublabel, accentColor } = colors
 
-  // Edges
-  g.append('g')
-    .selectAll('line')
-    .data(edges)
+  const edgeLines = scene.append('g')
+    .selectAll<SVGLineElement, MutableGraphEdge>('line')
+    .data(graph.edges)
     .join('line')
     .attr('class', 'edge-line')
-    .attr('stroke', (d: any) => RELATIONSHIP_COLORS[d.label] ?? '#333')
+    .attr('stroke', (edge) => RELATIONSHIP_COLORS[edge.label] ?? '#333')
     .attr('stroke-width', 1.5)
     .attr('stroke-opacity', 0.4)
 
-  // Edge labels
-  g.append('g')
-    .selectAll('text')
-    .data(edges)
+  const edgeLabels = scene.append('g')
+    .selectAll<SVGTextElement, MutableGraphEdge>('text')
+    .data(graph.edges)
     .join('text')
     .attr('class', 'edge-label')
     .attr('text-anchor', 'middle')
-    .attr('fill', (d: any) => RELATIONSHIP_COLORS[d.label] ?? '#555')
+    .attr('fill', (edge) => RELATIONSHIP_COLORS[edge.label] ?? '#555')
     .attr('font-size', '8px')
     .attr('opacity', 0.5)
-    .text((d: any) => d.label.replace(/_/g, ' '))
+    .text((edge) => edge.label.replace(/_/g, ' '))
 
-  // Clip paths
-  const defs = g.append('defs')
-  nodes.forEach((d: any) => {
-    const r = d.node_id === centerNodeId ? 22 : 16
+  const defs = scene.append('defs')
+  for (const node of graph.nodes) {
     defs.append('clipPath')
-      .attr('id', `clip-${d.node_id.replace(/[^a-zA-Z0-9]/g, '_')}`)
+      .attr('id', `clip-${sanitizeNodeId(node.node_id)}`)
       .append('circle')
-      .attr('r', r)
-  })
+      .attr('r', getNodeRadius(node, centerNodeId))
+  }
 
-  // Node groups
-  const node = g.append('g')
-    .selectAll('g')
-    .data(nodes)
+  const nodeGroups = scene.append('g')
+    .selectAll<SVGGElement, MutableGraphNode>('g')
+    .data(graph.nodes)
     .join('g')
     .attr('class', 'node-group')
     .attr('cursor', 'pointer')
 
-  // Node circles
-  node.append('circle')
-    .attr('r', (d: any) => d.node_id === centerNodeId ? 22 : 16)
-    .attr('fill', (d: any) => d.node_id === centerNodeId ? `color-mix(in oklch, ${accentColor} 20%, transparent)` : nodeFill)
-    .attr('stroke', (d: any) => d.node_id === centerNodeId ? accentColor : nodeStroke)
-    .attr('stroke-width', (d: any) => d.node_id === centerNodeId ? 2 : 1)
+  nodeGroups.append('circle')
+    .attr('r', (node) => getNodeRadius(node, centerNodeId))
+    .attr('fill', (node) => node.node_id === centerNodeId ? `color-mix(in oklch, ${accentColor} 20%, transparent)` : nodeFill)
+    .attr('stroke', (node) => node.node_id === centerNodeId ? accentColor : nodeStroke)
+    .attr('stroke-width', (node) => node.node_id === centerNodeId ? 2 : 1)
 
-  // Photos
-  node.append('image')
-    .attr('href', (d: any) => `/photos/${(d.label as string).toLowerCase().replace(/\s+/g, '-')}.jpg`)
-    .attr('x', (d: any) => d.node_id === centerNodeId ? -22 : -16)
-    .attr('y', (d: any) => d.node_id === centerNodeId ? -22 : -16)
-    .attr('width', (d: any) => d.node_id === centerNodeId ? 44 : 32)
-    .attr('height', (d: any) => d.node_id === centerNodeId ? 44 : 32)
-    .attr('clip-path', (d: any) => `url(#clip-${d.node_id.replace(/[^a-zA-Z0-9]/g, '_')})`)
+  nodeGroups
+    .filter((node) => getNodeImageHref(node) !== null)
+    .append('image')
+    .attr('href', getNodeImageHref)
+    .attr('x', (node) => -getNodeRadius(node, centerNodeId))
+    .attr('y', (node) => -getNodeRadius(node, centerNodeId))
+    .attr('width', (node) => getNodeRadius(node, centerNodeId) * 2)
+    .attr('height', (node) => getNodeRadius(node, centerNodeId) * 2)
+    .attr('clip-path', (node) => `url(#clip-${sanitizeNodeId(node.node_id)})`)
     .attr('preserveAspectRatio', 'xMidYMid slice')
-    .on('error', function() { d3.select(this).remove() })
-
-  // Labels
-  node.append('text')
-    .attr('text-anchor', 'middle')
-    .attr('dy', (d: any) => d.node_id === centerNodeId ? 36 : 28)
-    .attr('fill', nodeLabel)
-    .attr('font-size', (d: any) => d.node_id === centerNodeId ? '11px' : '9px')
-    .attr('font-weight', (d: any) => d.node_id === centerNodeId ? '600' : '400')
-    .text((d: any) => {
-      const name = d.label as string
-      return name.length > 20 ? name.slice(0, 18) + '...' : name
+    .on('error', function handleImageError() {
+      d3.select(this).remove()
     })
 
-  // Birth year
-  node.append('text')
+  nodeGroups.append('text')
     .attr('text-anchor', 'middle')
-    .attr('dy', (d: any) => d.node_id === centerNodeId ? 48 : 38)
+    .attr('dy', (node) => node.node_id === centerNodeId ? 36 : 28)
+    .attr('fill', nodeLabel)
+    .attr('font-size', (node) => node.node_id === centerNodeId ? '11px' : '9px')
+    .attr('font-weight', (node) => node.node_id === centerNodeId ? '600' : '400')
+    .text((node) => truncateLabel(node.label, 20))
+
+  nodeGroups.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dy', (node) => node.node_id === centerNodeId ? 48 : 38)
     .attr('fill', nodeSublabel)
     .attr('font-size', '8px')
     .attr('font-family', 'var(--font-mono)')
-    .text((d: any) => {
-      const meta = parseMeta(d.metadata)
-      return meta.birth_date ?? ''
-    })
+    .text((node) => parseMeta(node.metadata).birth_date ?? '')
 
-  // Interactions
-  node.on('click', (event: MouseEvent, d: any) => {
+  nodeGroups.on('click', (event, node) => {
     event.stopPropagation()
-    onNodeClick?.(d as GraphNode)
+    onNodeClick?.(node)
   })
 
-  node.on('mouseenter', (event: MouseEvent, d: any) => {
-    setHoveredNode(d.node_id)
-    d3.select(event.currentTarget as SVGGElement).select('circle')
-      .transition().duration(200)
+  nodeGroups.on('mouseenter', (event) => {
+    d3.select(event.currentTarget as SVGGElement)
+      .select('circle')
+      .transition()
+      .duration(200)
       .attr('stroke', accentColor)
       .attr('stroke-width', 2)
   })
-  node.on('mouseleave', (event: MouseEvent, d: any) => {
-    setHoveredNode(null)
-    d3.select(event.currentTarget as SVGGElement).select('circle')
-      .transition().duration(200)
-      .attr('stroke', d.node_id === centerNodeId ? accentColor : nodeStroke)
-      .attr('stroke-width', d.node_id === centerNodeId ? 2 : 1)
+
+  nodeGroups.on('mouseleave', (event, node) => {
+    d3.select(event.currentTarget as SVGGElement)
+      .select('circle')
+      .transition()
+      .duration(200)
+      .attr('stroke', node.node_id === centerNodeId ? accentColor : nodeStroke)
+      .attr('stroke-width', node.node_id === centerNodeId ? 2 : 1)
   })
 
-  // Drag — note: simulation restart is handled by the parent effect's tick handler
-  node.call(d3.drag<SVGGElement, any>()
-    .on('start', (event, d) => {
-      d.fx = d.x
-      d.fy = d.y
-    })
-    .on('drag', (event, d) => {
-      d.fx = event.x
-      d.fy = event.y
-    })
-    .on('end', (event, d) => {
-      if (d.node_id !== centerNodeId) {
-        d.fx = null
-        d.fy = null
-      }
-    }) as any)
+  nodeGroups.call(dragBehavior)
+
+  return {
+    nodeGroups,
+    edgeLines,
+    edgeLabels,
+  }
 }
 
-// === Constellation Mode ===
-
 function renderConstellation(
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
-  nodes: any[],
-  edges: any[],
-  connectedIds: Set<string>,
+  scene: d3.Selection<SVGGElement, unknown, null, undefined>,
+  graph: GraphModel,
   centerNodeId: string | undefined,
-  opts: any,
-) {
-  const { accentColor, nodeLabel, onNodeClick, setHoveredNode } = opts
+  colors: GraphColors,
+  onNodeClick: ForceGraphProps['onNodeClick'],
+  dragBehavior: d3.DragBehavior<SVGGElement, MutableGraphNode, MutableGraphNode | d3.SubjectPosition>,
+): ConstellationSelections {
+  const { accentColor, nodeLabel } = colors
 
-  // Curved edges — faint, ethereal lines
-  g.append('g')
-    .selectAll('path')
-    .data(edges)
+  const edgePaths = scene.append('g')
+    .selectAll<SVGPathElement, MutableGraphEdge>('path')
+    .data(graph.edges)
     .join('path')
     .attr('class', 'edge-curve')
     .attr('fill', 'none')
-    .attr('stroke', (d: any) => RELATIONSHIP_COLORS[d.label] ?? '#444')
+    .attr('stroke', (edge) => RELATIONSHIP_COLORS[edge.label] ?? '#444')
     .attr('stroke-width', 0.8)
     .attr('stroke-opacity', 0.15)
     .attr('stroke-dasharray', '4 4')
 
-  // Node groups
-  const node = g.append('g')
-    .selectAll('g')
-    .data(nodes)
+  const nodeGroups = scene.append('g')
+    .selectAll<SVGGElement, MutableGraphNode>('g')
+    .data(graph.nodes)
     .join('g')
     .attr('class', 'node-group')
     .attr('cursor', 'pointer')
 
-  // Glowing star nodes
-  node.append('circle')
-    .attr('r', (d: any) => d.node_id === centerNodeId ? 6 : 3.5)
-    .attr('fill', (d: any) => {
-      // Find relationship color from edges
-      const edge = edges.find((e: any) => e.source === d.node_id || e.target === d.node_id)
-      return edge ? (RELATIONSHIP_COLORS[edge.label] ?? accentColor) : accentColor
+  nodeGroups.append('circle')
+    .attr('r', (node) => getConstellationRadius(node, centerNodeId))
+    .attr('fill', (node) => {
+      const linkedEdge = graph.edges.find((edge) => edge.source.node_id === node.node_id || edge.target.node_id === node.node_id)
+      return linkedEdge ? (RELATIONSHIP_COLORS[linkedEdge.label] ?? accentColor) : accentColor
     })
-    .style('filter', (d: any) => {
-      const edge = edges.find((e: any) => e.source === d.node_id || e.target === d.node_id)
-      const color = edge ? (RELATIONSHIP_COLORS[edge.label] ?? accentColor) : accentColor
+    .style('filter', (node) => {
+      const linkedEdge = graph.edges.find((edge) => edge.source.node_id === node.node_id || edge.target.node_id === node.node_id)
+      const color = linkedEdge ? (RELATIONSHIP_COLORS[linkedEdge.label] ?? accentColor) : accentColor
       return `drop-shadow(0 0 6px ${color}) drop-shadow(0 0 12px ${color})`
     })
 
-  // Labels — hidden by default, shown on hover via CSS
-  node.append('text')
+  nodeGroups.append('text')
     .attr('class', 'constellation-label')
     .attr('text-anchor', 'middle')
     .attr('dy', -12)
@@ -401,54 +477,41 @@ function renderConstellation(
     .attr('font-family', 'var(--font-serif)')
     .attr('font-style', 'italic')
     .attr('opacity', 0)
-    .text((d: any) => {
-      const name = d.label as string
-      return name.length > 25 ? name.slice(0, 23) + '...' : name
-    })
+    .text((node) => truncateLabel(node.label, 25))
 
-  // Hover: show label + brighten star
-  node.on('mouseenter', (event: MouseEvent, d: any) => {
-    setHoveredNode(d.node_id)
+  nodeGroups.on('mouseenter', (event, node) => {
     const group = d3.select(event.currentTarget as SVGGElement)
-    group.select('.constellation-label')
-      .transition().duration(200)
+    group.select<SVGTextElement>('.constellation-label')
+      .transition()
+      .duration(200)
       .attr('opacity', 1)
     group.select('circle')
-      .transition().duration(200)
-      .attr('r', d.node_id === centerNodeId ? 8 : 5)
+      .transition()
+      .duration(200)
+      .attr('r', node.node_id === centerNodeId ? 8 : 5)
   })
 
-  node.on('mouseleave', (event: MouseEvent, d: any) => {
-    setHoveredNode(null)
+  nodeGroups.on('mouseleave', (event, node) => {
     const group = d3.select(event.currentTarget as SVGGElement)
-    group.select('.constellation-label')
-      .transition().duration(300)
+    group.select<SVGTextElement>('.constellation-label')
+      .transition()
+      .duration(300)
       .attr('opacity', 0)
     group.select('circle')
-      .transition().duration(300)
-      .attr('r', d.node_id === centerNodeId ? 6 : 3.5)
+      .transition()
+      .duration(300)
+      .attr('r', node.node_id === centerNodeId ? 6 : 3.5)
   })
 
-  // Click
-  node.on('click', (event: MouseEvent, d: any) => {
+  nodeGroups.on('click', (event, node) => {
     event.stopPropagation()
-    onNodeClick?.(d as GraphNode)
+    onNodeClick?.(node)
   })
 
-  // Drag
-  node.call(d3.drag<SVGGElement, any>()
-    .on('start', (event, d) => {
-      d.fx = d.x
-      d.fy = d.y
-    })
-    .on('drag', (event, d) => {
-      d.fx = event.x
-      d.fy = event.y
-    })
-    .on('end', (event, d) => {
-      if (d.node_id !== centerNodeId) {
-        d.fx = null
-        d.fy = null
-      }
-    }) as any)
+  nodeGroups.call(dragBehavior)
+
+  return {
+    nodeGroups,
+    edgePaths,
+  }
 }
