@@ -51,11 +51,9 @@ export function RecordButton() {
     if (!isTauri) return
     try {
       const { invoke } = await import('@tauri-apps/api/core')
-      const status = await invoke<RecordingStatus>('stop_recording')
+      await invoke<RecordingStatus>('stop_recording')
       setRecording(false)
       setDuration(0)
-      // TODO: Send to wsigomi for transcription
-      console.log('Recording saved:', status.file_path)
     } catch (err) {
       console.error('Failed to stop recording:', err)
     }
