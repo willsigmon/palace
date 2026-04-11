@@ -3,6 +3,23 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { getPhotoPathForName } from '@/lib/photo-manifest'
+import { getRuntimeConfig, resolveRuntimeUrl } from '@/lib/runtime-config'
+
+/**
+ * Resolve a photo URL from the API. Absolute URLs pass through;
+ * relative paths are resolved against NEXT_PUBLIC_API_URL so next/image
+ * receives a fully-qualified https URL.
+ */
+function resolvePhotoUrl(input: string): string {
+  if (/^https?:\/\//i.test(input)) return input
+  if (input.startsWith('/photos/')) return input // local manifest
+  try {
+    const { apiBaseUrl } = getRuntimeConfig()
+    return resolveRuntimeUrl(apiBaseUrl, input.startsWith('/') ? input : `/${input}`)
+  } catch {
+    return input
+  }
+}
 
 /**
  * Avatar with real contact photo fallback to color-coded initials.
@@ -47,7 +64,8 @@ export function Avatar({ name, size = 'md', photoUrl }: AvatarProps) {
   const [imgFailed, setImgFailed] = useState(false)
   const initials = getInitials(name)
   const hue = getHue(initials[0] ?? 'A')
-  const src = photoUrl ?? getPhotoPathForName(name)
+  const rawSrc = photoUrl ?? getPhotoPathForName(name)
+  const src = rawSrc ? resolvePhotoUrl(rawSrc) : null
   const dimension = SIZE_PX[size]
 
   if (src && !imgFailed) {

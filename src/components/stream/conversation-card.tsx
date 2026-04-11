@@ -10,33 +10,48 @@ interface ConversationCardProps {
   readonly index: number
 }
 
-// Category → accent color mapping (uses design token colors)
-const CATEGORY_COLORS: Record<string, { border: string; badge: string; text: string }> = {
-  family:       { border: 'border-l-amber-500/60',    badge: 'bg-amber-500/15 text-amber-400',       text: 'text-amber-400' },
-  work:         { border: 'border-l-blue-400/60',     badge: 'bg-blue-400/15 text-blue-400',         text: 'text-blue-400' },
-  music:        { border: 'border-l-purple-400/60',   badge: 'bg-purple-400/15 text-purple-400',     text: 'text-purple-400' },
-  personal:     { border: 'border-l-emerald-400/60',  badge: 'bg-emerald-400/15 text-emerald-400',   text: 'text-emerald-400' },
-  health:       { border: 'border-l-rose-400/60',     badge: 'bg-rose-400/15 text-rose-400',         text: 'text-rose-400' },
-  technology:   { border: 'border-l-cyan-400/60',     badge: 'bg-cyan-400/15 text-cyan-400',         text: 'text-cyan-400' },
-  finance:      { border: 'border-l-emerald-500/60',  badge: 'bg-emerald-500/15 text-emerald-400',   text: 'text-emerald-400' },
-  social:       { border: 'border-l-pink-400/60',     badge: 'bg-pink-400/15 text-pink-400',         text: 'text-pink-400' },
-  education:    { border: 'border-l-indigo-400/60',   badge: 'bg-indigo-400/15 text-indigo-400',     text: 'text-indigo-400' },
-  real_estate:  { border: 'border-l-orange-400/60',   badge: 'bg-orange-400/15 text-orange-400',     text: 'text-orange-400' },
-  other:        { border: 'border-l-sub/40',          badge: 'bg-elevated text-sub',                 text: 'text-sub' },
+// Category → CSS variable. All colors live in globals.css `@theme` so light mode
+// recolors automatically. We apply them via inline styles + color-mix() since
+// Tailwind's opacity modifier doesn't compose with var() arbitrary values.
+const CATEGORY_TOKEN: Record<string, string> = {
+  family:      '--color-cat-family',
+  work:        '--color-cat-work',
+  music:       '--color-cat-music',
+  personal:    '--color-cat-personal',
+  health:      '--color-cat-health',
+  technology:  '--color-cat-technology',
+  finance:     '--color-cat-finance',
+  social:      '--color-cat-social',
+  education:   '--color-cat-education',
+  real_estate: '--color-cat-real-estate',
 }
 
-const DEFAULT_COLORS = { border: 'border-l-border', badge: 'bg-elevated text-sub', text: 'text-sub' }
+interface CategoryStyle {
+  readonly border: React.CSSProperties | undefined
+  readonly badge: React.CSSProperties | undefined
+  readonly hasToken: boolean
+}
 
-function getCategoryColors(category: string | null) {
-  if (!category) return DEFAULT_COLORS
-  return CATEGORY_COLORS[category.toLowerCase()] ?? DEFAULT_COLORS
+function getCategoryStyle(category: string | null): CategoryStyle {
+  if (!category) return { border: undefined, badge: undefined, hasToken: false }
+  const token = CATEGORY_TOKEN[category.toLowerCase()]
+  if (!token) return { border: undefined, badge: undefined, hasToken: false }
+  const color = `var(${token})`
+  return {
+    border: { borderLeftColor: `color-mix(in oklch, ${color} 60%, transparent)` },
+    badge: {
+      backgroundColor: `color-mix(in oklch, ${color} 15%, transparent)`,
+      color,
+    },
+    hasToken: true,
+  }
 }
 
 export function ConversationCard({ conversation, index }: ConversationCardProps) {
   const title = conversation.title ?? 'Untitled'
   const overview = conversation.overview ?? ''
   const duration = calcDuration(conversation.startedAt, conversation.finishedAt)
-  const colors = getCategoryColors(conversation.category)
+  const catStyle = getCategoryStyle(conversation.category)
   const isUntitled = !conversation.title || conversation.title === 'Untitled'
   const isEmpty = isUntitled && !overview
   const patina = getPatina(conversation.startedAt)
@@ -56,13 +71,17 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
     return []
   })()
 
+  const borderClass = catStyle.hasToken ? '' : 'border-l-border'
+  const badgeClass = catStyle.hasToken ? '' : 'bg-elevated text-sub'
+
   // Compact card for empty/untitled conversations
   if (isEmpty) {
     return (
       <Link
         href={`/conversation/${conversation.id}`}
         data-card-index={index}
-        className={`group flex items-center gap-4 rounded-lg border border-border/30 border-l-2 ${colors.border} bg-surface/30 px-4 py-2.5 transition-all duration-200 hover:border-border/50 hover:bg-surface/50 ${patinaClass}`}
+        style={catStyle.border}
+        className={`group flex items-center gap-4 rounded-lg border border-border/30 border-l-2 ${borderClass} bg-surface/30 px-4 py-2.5 transition-all duration-200 hover:border-border/50 hover:bg-surface/50 ${patinaClass}`}
       >
         {conversation.emoji && <span className="text-sm">{conversation.emoji}</span>}
         <span className="text-sm text-sub group-hover:text-text transition-colors">
@@ -78,7 +97,10 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
           {formatTime(conversation.startedAt)}
         </time>
         {conversation.category && (
-          <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider ${colors.badge}`}>
+          <span
+            style={catStyle.badge}
+            className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider ${badgeClass}`}
+          >
             {conversation.category}
           </span>
         )}
@@ -91,7 +113,8 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
     <Link
       href={`/conversation/${conversation.id}`}
       data-card-index={index}
-      className={`group relative block rounded-xl border border-border/40 border-l-[3px] ${colors.border} bg-surface/50 p-5 transition-all duration-250 hover:border-border/60 hover:bg-surface/70 hover:shadow-card ${patinaClass}`}
+      style={catStyle.border}
+      className={`group relative block rounded-xl border border-border/40 border-l-[3px] ${borderClass} bg-surface/50 p-5 transition-all duration-250 hover:border-border/60 hover:bg-surface/70 hover:shadow-card ${patinaClass}`}
     >
       {/* Top row: emoji + time + duration + category */}
       <div className="mb-2.5 flex items-center gap-2">
@@ -112,7 +135,10 @@ export function ConversationCard({ conversation, index }: ConversationCardProps)
         )}
         <span className="flex-1" />
         {conversation.category && (
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${colors.badge}`}>
+          <span
+            style={catStyle.badge}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badgeClass}`}
+          >
             {conversation.category}
           </span>
         )}

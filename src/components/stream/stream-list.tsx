@@ -2,13 +2,18 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import type { ConversationListItem } from '@/types/api'
 import { getConversations } from '@/lib/api'
 import { useAppStore } from '@/stores/app-store'
 import { ConversationCard } from './conversation-card'
 import { ScrollReveal } from './scroll-reveal'
 import { parseTimestamp } from '@/lib/format'
-import { API_DEFAULTS } from '@/lib/constants'
+import { ANIMATION, API_DEFAULTS } from '@/lib/constants'
+
+/** How many cards to include in the GSAP first-render sweep. */
+const FIRST_RENDER_COUNT = 8
 
 interface StreamListProps {
   readonly initialConversations: readonly ConversationListItem[]
@@ -26,6 +31,35 @@ export function StreamList({ initialConversations }: StreamListProps) {
   const [showUntitled, setShowUntitled] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const category = useAppStore((s) => s.filters.category)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  // First-render cinematic sweep: coordinated GSAP timeline on the top N cards.
+  // Runs once per mount, skips if prefers-reduced-motion is set.
+  useGSAP(
+    () => {
+      if (typeof window === 'undefined') return
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      if (!listRef.current) return
+
+      const cards = listRef.current.querySelectorAll<HTMLElement>('[data-first-sweep="true"]')
+      if (cards.length === 0) return
+
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 18, filter: 'blur(6px)' },
+        {
+          opacity: 1,
+          y: 0,
+          filter: 'blur(0px)',
+          duration: ANIMATION.CARD_ENTER,
+          stagger: ANIMATION.CARD_STAGGER,
+          ease: 'expo.out',
+          clearProps: 'filter,transform',
+        },
+      )
+    },
+    { scope: listRef },
+  )
 
   // Re-fetch when category filter changes
   useEffect(() => {
@@ -107,7 +141,7 @@ export function StreamList({ initialConversations }: StreamListProps) {
   const grouped = groupByDate(visibleConversations)
 
   return (
-    <div className="relative">
+    <div ref={listRef} className="relative">
       {/* Timeline thread — subtle vertical line */}
       <div className="absolute left-[11px] top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent md:left-[15px]" />
 
@@ -145,15 +179,30 @@ export function StreamList({ initialConversations }: StreamListProps) {
               {items.map((conversation, i) => {
                 const isLast = dateLabel === grouped[grouped.length - 1]?.[0]
                   && i === items.length - 1
-                // Only stagger the first group's first few cards
-                const staggerDelay = groupIdx === 0 && i < 6 ? i * 0.04 : 0
+                // First N cards across the whole stream ride the GSAP sweep
+                // (no ScrollReveal wrapper). Everything else uses ScrollReveal.
+                const globalIndex = groupIdx === 0 ? i : -1
+                const inFirstSweep = globalIndex >= 0 && globalIndex < FIRST_RENDER_COUNT
+
+                if (inFirstSweep) {
+                  return (
+                    <div
+                      key={conversation.id}
+                      ref={isLast ? lastCardRef : undefined}
+                      data-first-sweep="true"
+                      style={{ opacity: 0 }}
+                    >
+                      <ConversationCard conversation={conversation} index={i} />
+                    </div>
+                  )
+                }
 
                 return (
                   <div
                     key={conversation.id}
                     ref={isLast ? lastCardRef : undefined}
                   >
-                    <ScrollReveal delay={staggerDelay}>
+                    <ScrollReveal>
                       <ConversationCard
                         conversation={conversation}
                         index={i}

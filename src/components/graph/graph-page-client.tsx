@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { ForceGraph } from './force-graph'
 import { getGraph } from '@/lib/api'
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/types/api'
@@ -27,31 +28,69 @@ export function GraphPageClient({ initialNodes, initialEdges }: GraphPageClientP
   const [centerNodeId, setCenterNodeId] = useState(WILL_NODE_ID)
   const [loading, setLoading] = useState(false)
   const [constellation, setConstellation] = useState(false)
+  const [query, setQuery] = useState('')
+  const [notFound, setNotFound] = useState(false)
+
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const lastSyncedQuery = useRef<string | null>(null)
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node)
   }, [])
 
-  async function explorePerson(name: string) {
+  const explorePerson = useCallback(async (name: string) => {
     setLoading(true)
+    setNotFound(false)
     try {
       const data = await getGraph({ related_to: name, limit: 50 })
       if (data.nodes.length > 0) {
         setNodes(data.nodes)
         setEdges(data.edges)
-        const clicked = data.nodes.find(n => n.label === name)
+        const clicked = data.nodes.find(n => n.label.toLowerCase() === name.toLowerCase())
         if (clicked) setCenterNodeId(clicked.node_id)
+        else setCenterNodeId(data.nodes[0].node_id)
+      } else {
+        setNotFound(true)
       }
     } catch {
-      // keep existing
+      setNotFound(true)
     } finally {
       setLoading(false)
     }
     setSelectedNode(null)
+  }, [])
+
+  // Sync from URL (?q=) → graph. Runs on mount and when `q` changes.
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q && q !== lastSyncedQuery.current) {
+      lastSyncedQuery.current = q
+      setQuery(q)
+      void explorePerson(q)
+    }
+  }, [searchParams, explorePerson])
+
+  function submitQuery(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const trimmed = query.trim()
+    if (!trimmed) return
+    lastSyncedQuery.current = trimmed
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('q', trimmed)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    void explorePerson(trimmed)
   }
 
   function resetToWill() {
-    explorePerson('William Justin Sigmon')
+    setQuery('')
+    lastSyncedQuery.current = null
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('q')
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    void explorePerson('William Justin Sigmon')
     setCenterNodeId(WILL_NODE_ID)
   }
 
@@ -60,10 +99,27 @@ export function GraphPageClient({ initialNodes, initialEdges }: GraphPageClientP
   return (
     <div className="relative">
       {/* Controls */}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <form onSubmit={submitQuery} className="flex items-center gap-1.5">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Explore a person or topic…"
+            aria-label="Search graph"
+            className="w-56 rounded-lg border border-border/40 bg-surface/40 px-3 py-1.5 text-[11px] text-text placeholder:text-muted/50 focus:border-accent/40 focus:bg-surface/60 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={!query.trim() || loading}
+            className="rounded-lg bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Explore
+          </button>
+        </form>
         <button
           onClick={resetToWill}
-          className="rounded-lg bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20"
+          className="rounded-lg bg-surface/30 px-3 py-1.5 text-[11px] font-medium text-muted transition-colors hover:bg-surface/50 hover:text-sub"
         >
           Center on Will
         </button>
@@ -82,6 +138,9 @@ export function GraphPageClient({ initialNodes, initialEdges }: GraphPageClientP
             <div className="h-3 w-3 animate-spin rounded-full border border-accent/30 border-t-accent" />
             Loading...
           </div>
+        )}
+        {notFound && !loading && (
+          <span className="text-[11px] text-rose-400/70">No matches</span>
         )}
         <span className="flex-1" />
         <span className="text-[10px] text-muted/50 font-[family-name:var(--font-mono)]">
