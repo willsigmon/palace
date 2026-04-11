@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Geist_Mono } from 'next/font/google'
 import { Instrument_Serif } from 'next/font/google'
 import { Inter } from 'next/font/google'
@@ -97,6 +99,8 @@ export default function RootLayout({
         <NativeInit />
         <KeyboardHelp />
         <ToastContainer />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
