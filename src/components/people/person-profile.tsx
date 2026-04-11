@@ -81,7 +81,7 @@ export function PersonProfile({ data }: PersonProfileProps) {
 
       {/* Header */}
       <header className="mb-8 flex items-start gap-5">
-        <Avatar name={name} size="xl" />
+        <Avatar name={name} size="xl" photoUrl={identity?.photo_path ?? undefined} />
         <div>
           <h1 className="text-lg font-semibold text-text">
             {name}

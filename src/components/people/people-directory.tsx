@@ -37,6 +37,7 @@ function getSource(person: Person): string {
 type DirectoryPerson = Person & {
   readonly imessage_count?: number
   readonly last_message_date?: string | null
+  readonly photo_path?: string | null
 }
 
 function getDirectoryPersonScore(person: DirectoryPerson): number {
@@ -127,16 +128,29 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
     }
   }
 
+  // Map id → photo_path from identity graph so alpha/convos modes can also show photos.
+  const photoById = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const ip of identityPeople) {
+      if (ip.photo_path) m.set(ip.id, ip.photo_path)
+    }
+    return m
+  }, [identityPeople])
+
   // Group by first letter (alpha mode) or flat sorted list (conversations mode)
   const grouped = useMemo(() => {
     const phonePattern = /^[\d\s\-().+]+$/
 
-    const filtered = dedupePeopleById(people).filter((person) => {
-      const name = person.display_name ?? person.name
-      if (name.startsWith('+')) return false
-      if (/^\d/.test(name) && phonePattern.test(name)) return false
-      return true
-    })
+    const filtered = dedupePeopleById(people)
+      .filter((person) => {
+        const name = person.display_name ?? person.name
+        if (name.startsWith('+')) return false
+        if (/^\d/.test(name) && phonePattern.test(name)) return false
+        return true
+      })
+      .map((person) =>
+        person.photo_path ? person : { ...person, photo_path: photoById.get(person.id) ?? null }
+      )
 
     if (sortMode === 'closest' && identityPeople.length > 0) {
       // Use identity graph data — sorted by combined iMessage + conversation signal
@@ -154,6 +168,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
           conversation_count: ip.conversation_count,
           imessage_count: ip.imessage_count,
           last_message_date: ip.last_message_date,
+          photo_path: ip.photo_path,
         }) as DirectoryPerson)
       )
       return [['—', idPeople]] as [string, DirectoryPerson[]][]
@@ -181,7 +196,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
       }
     }
     return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b))
-  }, [people, sortMode, identityPeople])
+  }, [people, sortMode, identityPeople, photoById])
 
   const totalShown = grouped.reduce((sum, [, items]) => sum + items.length, 0)
 
@@ -277,7 +292,7 @@ export function PeopleDirectory({ initialPeople }: PeopleDirectoryProps) {
                     className="group flex items-center gap-3 rounded-lg border border-border/30 bg-surface/40 p-3 transition-all duration-200 hover:border-border hover:bg-surface"
                   >
                     {/* Avatar */}
-                    <Avatar name={name} size="lg" />
+                    <Avatar name={name} size="lg" photoUrl={person.photo_path ?? undefined} />
 
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-text group-hover:text-accent transition-colors">

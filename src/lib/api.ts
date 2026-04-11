@@ -23,7 +23,7 @@ type PrimitiveParam = string | number | boolean | undefined | null
 
 type RequestOptions = {
   readonly params?: Record<string, PrimitiveParam>
-  readonly method?: 'GET' | 'POST'
+  readonly method?: 'GET' | 'POST' | 'PATCH'
   readonly json?: unknown
   readonly body?: BodyInit
   readonly headers?: HeadersInit
@@ -439,6 +439,13 @@ export function getActionItems(params?: {
       limit: params?.limit ?? 50,
       completed: params?.completed,
     },
+  })
+}
+
+export function updateActionItem(id: number, completed: boolean) {
+  return request<ActionItem | void>(`/api/action-items/${id}`, {
+    method: 'PATCH',
+    json: { completed },
   })
 }
 

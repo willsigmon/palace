@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getMedia, searchTmdbMedia, type MediaMemory, type MediaSession, type MediaStats, type TmdbResult } from '@/lib/api'
+import { getCached, hydrateKnownKeys, setCached } from '@/lib/tmdb-cache'
 import { calcDuration, formatDuration, formatRelativeTime, truncate } from '@/lib/format'
 
 const TYPE_FILTERS = [
@@ -72,6 +73,17 @@ export default function MediaPage() {
   const fetchPoster = useCallback(async (title: string, mediaType: string) => {
     const key = `${mediaType}:${title}`
     if (posterCache.current[key] !== undefined) return
+
+    // localStorage hit — skip the network.
+    const stored = getCached(key)
+    if (stored !== undefined) {
+      posterCache.current[key] = stored
+      if (stored) {
+        setPosters((previous) => (previous[key] ? previous : { ...previous, [key]: stored }))
+      }
+      return
+    }
+
     posterCache.current[key] = null
 
     const tmdbType = TMDB_TYPE[mediaType] || 'multi'
@@ -84,6 +96,7 @@ export default function MediaPage() {
       const data = await searchTmdbMedia(cleanTitle, tmdbType)
       const result = data.results[0] ?? null
       posterCache.current[key] = result
+      setCached(key, result)
       if (result) {
         setPosters((previous) => ({ ...previous, [key]: result }))
       }
@@ -92,7 +105,21 @@ export default function MediaPage() {
     }
   }, [])
 
+  // Hydrate known poster keys from localStorage whenever session list changes.
   useEffect(() => {
+    const keys = sessions
+      .filter((s) => s.media_type === 'movie' || s.media_type === 'show')
+      .map((s) => `${s.media_type}:${s.title}`)
+    if (keys.length === 0) return
+
+    const hydrated = hydrateKnownKeys(keys)
+    if (Object.keys(hydrated).length > 0) {
+      for (const [key, value] of Object.entries(hydrated)) {
+        posterCache.current[key] = value
+      }
+      setPosters((previous) => ({ ...hydrated, ...previous }))
+    }
+
     for (const session of sessions) {
       if (session.media_type === 'movie' || session.media_type === 'show') {
         void fetchPoster(session.title, session.media_type)
