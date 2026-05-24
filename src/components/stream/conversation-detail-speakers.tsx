@@ -113,7 +113,7 @@ export function ConversationDetailSpeakers({
               <path d="M13.3 1v3h-3M2.7 15v-3h3" />
             </svg>
           )}
-          {reprocessing ? 'Re-processing with local AI...' : 'Re-process with Marlin'}
+          {reprocessing ? 'Re-processing with WSIG...' : 'Re-process with WSIG'}
         </button>
       </div>
     </>

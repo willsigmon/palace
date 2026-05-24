@@ -89,7 +89,7 @@ export function WormholeButton() {
       <button
         onClick={travel}
         disabled={traveling}
-        className="fixed bottom-24 right-5 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-border/30 bg-surface/60 backdrop-blur-sm text-muted transition-all duration-300 hover:border-accent/40 hover:text-accent hover:shadow-[0_0_20px_var(--color-glow)] hover:scale-105 active:scale-95 disabled:opacity-50 md:bottom-6 md:right-6"
+        className="fixed bottom-6 right-6 z-30 hidden h-11 w-11 items-center justify-center rounded-full border border-border/30 bg-surface/60 text-muted backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-accent/40 hover:text-accent hover:shadow-[0_0_20px_var(--color-glow)] active:scale-95 disabled:opacity-50 md:flex"
         aria-label="Travel to random memory"
         title="Wormhole — random memory (W)"
       >

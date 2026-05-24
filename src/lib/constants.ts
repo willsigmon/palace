@@ -2,18 +2,23 @@
  * PALACE constants and configuration
  */
 
-// Navigation items — Marlin first, plain names
+// Primary navigation — WSIG/search first, exploration moved behind More.
 export const NAV_ITEMS = [
-  { id: 'marlin', label: 'Marlin', href: '/', icon: 'voice' },
-  { id: 'timeline', label: 'Timeline', href: '/timeline', icon: 'stream' },
-  { id: 'people', label: 'People', href: '/people', icon: 'people' },
-  { id: 'memories', label: 'Memories', href: '/memories', icon: 'memories' },
+  { id: 'wsig', label: 'WSIG', href: '/', icon: 'voice' },
   { id: 'search', label: 'Search', href: '/search', icon: 'search' },
-  { id: 'graph', label: 'Graph', href: '/graph', icon: 'graph' },
-  { id: 'insights', label: 'Insights', href: '/insights', icon: 'insights' },
-  { id: 'media', label: 'Media', href: '/media', icon: 'media' },
-  { id: 'locations', label: 'Map', href: '/locations', icon: 'locations' },
+  { id: 'timeline', label: 'Timeline', href: '/timeline', icon: 'stream' },
   { id: 'actions', label: 'Actions', href: '/actions', icon: 'actions' },
+  { id: 'memories', label: 'Memories', href: '/memories', icon: 'memories' },
+  { id: 'more', label: 'More', href: '/more', icon: 'more' },
+] as const
+
+export const EXPLORE_ITEMS = [
+  { id: 'people', label: 'People', href: '/people', icon: 'people', description: 'Relationships and identity graph' },
+  { id: 'insights', label: 'Insights', href: '/insights', icon: 'insights', description: 'Patterns, recaps, and discoveries' },
+  { id: 'media', label: 'Media', href: '/media', icon: 'media', description: 'Music, shows, games, and videos' },
+  { id: 'locations', label: 'Map', href: '/locations', icon: 'locations', description: 'Places and movement history' },
+  { id: 'graph', label: 'Graph', href: '/graph', icon: 'graph', description: 'Experimental connection explorer' },
+  { id: 'verticals', label: 'Verticals', href: '/verticals', icon: 'verticals', description: 'Workstreams and businesses' },
 ] as const
 
 // API defaults

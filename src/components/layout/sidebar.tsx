@@ -123,6 +123,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M4 11.5l1.5 1.5L8 10" />
     </svg>
   ),
+  more: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="5" cy="10" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="10" cy="10" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="1.3" fill="currentColor" stroke="none" />
+    </svg>
+  ),
 }
 
 export function Sidebar() {

@@ -18,6 +18,8 @@ export default async function GraphPage() {
     stats = null
   }
 
+  const enrichment = stats?.enrichment
+
   return (
     <div className="mx-auto max-w-6xl px-[var(--space-page)] py-8">
       <header className="mb-6">
@@ -31,10 +33,10 @@ export default async function GraphPage() {
 
       {stats && (
         <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatCard label="People" value={formatNumber(stats.enrichment.people)} color="text-accent" />
-          <StatCard label="Graph Nodes" value={formatNumber(stats.enrichment.kgNodes)} color="text-serendipity" />
+          <StatCard label="People" value={formatNumber(enrichment?.people ?? 0)} color="text-accent" />
+          <StatCard label="Graph Nodes" value={formatNumber(enrichment?.kgNodes ?? graphData.nodes.length)} color="text-serendipity" />
           <StatCard label="Conversations" value={formatNumber(stats.conversations)} color="text-pattern" />
-          <StatCard label="Locations" value={formatNumber(stats.enrichment.locations)} color="text-memory" />
+          <StatCard label="Locations" value={formatNumber(enrichment?.locations ?? 0)} color="text-memory" />
         </div>
       )}
 

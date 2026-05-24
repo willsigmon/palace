@@ -83,7 +83,7 @@ export function VoiceInputBar({ state, audioLevel, onStop, onCancel }: VoiceInpu
                 />
               ))}
             </div>
-            <span className="text-sm text-sub">Marlin is thinking...</span>
+            <span className="text-sm text-sub">WSIG is thinking...</span>
           </div>
         )}
         {state === 'speaking' && (
@@ -100,7 +100,7 @@ export function VoiceInputBar({ state, audioLevel, onStop, onCancel }: VoiceInpu
                 />
               ))}
             </div>
-            <span className="text-sm text-sub">Marlin is speaking...</span>
+            <span className="text-sm text-sub">WSIG is speaking...</span>
           </div>
         )}
       </div>

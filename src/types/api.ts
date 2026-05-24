@@ -100,6 +100,7 @@ export interface SearchResponse {
   readonly actionItems: readonly SearchActionItem[]
   readonly people: readonly SearchPerson[]
   readonly limitless: readonly SearchLimitless[]
+  readonly fieldy?: readonly SearchFieldyCapture[]
 }
 
 export interface SearchMemory {
@@ -139,6 +140,16 @@ export interface SearchLimitless {
   readonly startDate: string
 }
 
+export interface SearchFieldyCapture {
+  readonly id: number
+  readonly title: string | null
+  readonly overview: string | null
+  readonly date: string
+  readonly session_type: string | null
+  readonly people_mentioned: string | null
+  readonly quality_score: number | null
+}
+
 // === Stats (GET /api/stats) ===
 
 export interface StatsResponse {
@@ -147,7 +158,7 @@ export interface StatsResponse {
   readonly actionItems: number
   readonly observations: number
   readonly screenshots: number
-  readonly enrichment: {
+  readonly enrichment?: {
     readonly people: number
     readonly kgNodes: number
     readonly locations: number

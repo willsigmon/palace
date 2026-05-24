@@ -1,34 +1,66 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ExampleQuestionList } from '@/components/ask/example-question-list'
 import { ThreadMessageList } from '@/components/ask/thread-message-list'
 import type { ThreadMessage } from '@/components/ask/types'
+import { CommandCenterSnapshot, type CommandCenterSnapshotData } from '@/components/ask/command-center-snapshot'
 import { VoiceInputBar } from '@/components/voice/voice-input-bar'
 import { useMarlinVoice, type VoiceResult } from '@/hooks/use-marlin-voice'
-import { askQuestion, ApiError } from '@/lib/api'
+import { reprocessConversationTranscript } from '@/lib/marlin'
 import { hapticImpact, hapticSelection } from '@/lib/haptics'
 
 const EXAMPLE_QUESTIONS = [
-  'Who is Carter and what do we work on together?',
-  'What have I been doing with HubZone lately?',
-  'Tell me about my family',
-  "What's the status of the Kyndred project?",
-  'Who do I talk to the most?',
-  'What happened last Tuesday?',
+  'What do I need to follow up on?',
+  'What happened yesterday?',
+  'Find recent Carter updates.',
+  'What did I promise this week?',
 ] as const
 
-export function AskPageController() {
+const QUICK_LINKS = [
+  {
+    href: '/search',
+    label: 'Search archive',
+    description: 'Find a person, project, promise, or phrase.',
+    icon: '⌕',
+  },
+  {
+    href: '/actions',
+    label: 'Open actions',
+    description: 'Review what conversations turned into tasks.',
+    icon: '✓',
+  },
+  {
+    href: '/timeline',
+    label: 'Latest timeline',
+    description: 'See what PALACE captured recently.',
+    icon: '↕',
+  },
+  {
+    href: '/memories',
+    label: 'Memory cards',
+    description: 'Browse extracted facts and insights.',
+    icon: '◌',
+  },
+] as const
+
+export function AskPageController({ snapshot }: { readonly snapshot?: CommandCenterSnapshotData | null }) {
   return (
     <Suspense>
-      <AskPageControllerInner />
+      <AskPageControllerInner snapshot={snapshot ?? null} />
     </Suspense>
   )
 }
 
-function AskPageControllerInner() {
+function AskPageControllerInner({ snapshot }: { readonly snapshot: CommandCenterSnapshotData | null }) {
   const searchParams = useSearchParams()
+  const reactId = useId()
+  const marlinSessionId = useMemo(
+    () => `palace-${reactId.replace(/[:]/g, '')}`,
+    [reactId],
+  )
   const [question, setQuestion] = useState('')
   const [thread, setThread] = useState<ThreadMessage[]>([])
   const [loading, setLoading] = useState(false)
@@ -36,6 +68,7 @@ function AskPageControllerInner() {
   const [pendingTranscript, setPendingTranscript] = useState('')
   const threadEndRef = useRef<HTMLDivElement>(null)
   const voiceStartedRef = useRef(false)
+  const queryStartedRef = useRef(false)
 
   const scrollToBottom = useCallback(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -58,6 +91,7 @@ function AskPageControllerInner() {
   }, [scrollToBottom])
 
   const voice = useMarlinVoice({
+    sessionId: marlinSessionId,
     onResult: handleVoiceResult,
   })
 
@@ -91,19 +125,22 @@ function AskPageControllerInner() {
     setQuestion('')
 
     try {
-      const data = await askQuestion(query)
+      const data = await reprocessConversationTranscript({
+        transcript: query,
+        sessionId: marlinSessionId,
+      })
       const nextMessage: ThreadMessage = {
         id: `text-${Date.now()}`,
         mode: 'text',
         question: query,
-        answer: data.answer,
-        sources: data.sources,
+        answer: data.response,
+        model: data.model,
       }
       setThread((previous) => [...previous, nextMessage])
     } catch (error) {
-      const fallback = error instanceof ApiError
-        ? `Failed to reach PALACE (${error.status}). Check the API connection.`
-        : 'Failed to reach PALACE. Check API connection.'
+      const fallback = error instanceof Error
+        ? `Failed to reach WSIG voice service: ${error.message}`
+        : 'Failed to reach WSIG voice service. Check the connection.'
 
       setThread((previous) => [
         ...previous,
@@ -117,7 +154,15 @@ function AskPageControllerInner() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [marlinSessionId])
+
+  useEffect(() => {
+    const prompt = searchParams.get('q')?.trim()
+    if (prompt && !queryStartedRef.current) {
+      queryStartedRef.current = true
+      void runAsk(prompt)
+    }
+  }, [runAsk, searchParams])
 
   const handleExampleSelect = useCallback((nextQuestion: string) => {
     hapticSelection()
@@ -176,16 +221,48 @@ function AskPageControllerInner() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col px-[var(--space-page)] py-8" style={{ minHeight: 'calc(100dvh - 4rem)' }}>
       <header className="mb-6">
-        <h1 className="text-lg font-semibold text-text">Marlin</h1>
-        <p className="mt-1 text-sm text-sub">Ask anything about your life. Type or talk.</p>
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/15 bg-accent/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent/80">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          WSIG ready
+        </div>
+        <h1 className="text-[clamp(2.1rem,11vw,4.5rem)] font-semibold leading-[0.9] tracking-[-0.08em] text-text">
+          Ask clearly.
+        </h1>
+        <p className="mt-4 max-w-lg text-[15px] leading-7 text-sub">
+          WSIG is the front door to your archive: quick answers, follow-ups, recent context,
+          and search without digging through every surface.
+        </p>
       </header>
 
       {showEmpty && (
-        <ExampleQuestionList
-          questions={EXAMPLE_QUESTIONS}
-          voiceMode={voiceMode}
-          onSelect={handleExampleSelect}
-        />
+        <div className="space-y-5">
+          <CommandCenterSnapshot snapshot={snapshot} />
+
+          <div className="hidden grid-cols-2 gap-2 sm:grid">
+            {QUICK_LINKS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group rounded-2xl border border-border/30 bg-surface/30 p-3 transition-all hover:-translate-y-0.5 hover:border-accent/25 hover:bg-surface/50 hover:shadow-card sm:p-4"
+              >
+                <div className="mb-3 flex items-center justify-between sm:mb-4">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/30 bg-elevated/30 font-[family-name:var(--font-serif)] text-base italic text-accent sm:h-9 sm:w-9 sm:text-lg">
+                    {item.icon}
+                  </span>
+                  <span className="text-muted/35 transition-transform group-hover:translate-x-1 group-hover:text-accent">→</span>
+                </div>
+                <p className="text-sm font-medium text-text">{item.label}</p>
+                <p className="mt-1 hidden text-[12px] leading-5 text-muted/70 sm:block">{item.description}</p>
+              </Link>
+            ))}
+          </div>
+
+          <ExampleQuestionList
+            questions={EXAMPLE_QUESTIONS}
+            voiceMode={voiceMode}
+            onSelect={handleExampleSelect}
+          />
+        </div>
       )}
 
       <div className="flex-1 pb-4">
@@ -196,7 +273,7 @@ function AskPageControllerInner() {
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full gradient-accent animate-pulse">
               <span className="font-[family-name:var(--font-serif)] text-[10px] font-bold italic text-void">M</span>
             </div>
-            <span className="text-sm text-sub">Marlin is thinking...</span>
+            <span className="text-sm text-sub">WSIG is thinking...</span>
           </div>
         )}
 
@@ -205,7 +282,7 @@ function AskPageControllerInner() {
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full gradient-accent animate-pulse">
               <span className="font-[family-name:var(--font-serif)] text-[10px] font-bold italic text-void">P</span>
             </div>
-            <span className="text-sm text-sub">Searching your memories...</span>
+            <span className="text-sm text-sub">Asking WSIG...</span>
           </div>
         )}
 
@@ -219,7 +296,7 @@ function AskPageControllerInner() {
       </div>
 
       <div
-        className="sticky bottom-0 -mx-[var(--space-page)] border-t border-border/10 bg-void/90 px-[var(--space-page)] pt-2 backdrop-blur-md"
+        className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] -mx-[var(--space-page)] border-t border-border/10 bg-void/90 px-[var(--space-page)] pt-2 backdrop-blur-md md:bottom-0 md:mx-0 md:border-t-0 md:bg-transparent md:px-0 md:backdrop-blur-0"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}
       >
         {voice.isActive ? (
@@ -242,8 +319,8 @@ function AskPageControllerInner() {
                   void runAsk(question)
                 }
               }}
-              placeholder={voiceMode ? 'Type or press M to talk...' : 'What would you like to know?'}
-              className="w-full rounded-2xl border border-border/40 bg-surface/30 py-4 pl-5 pr-32 text-[16px] text-text outline-none transition-all placeholder:text-muted/50 focus:border-accent/40 focus:shadow-[0_0_24px_var(--color-glow)]"
+              placeholder={voiceMode ? 'Type or press M to talk...' : 'Ask WSIG anything...'}
+              className="w-full rounded-2xl border border-border/40 bg-surface/40 py-4 pl-5 pr-32 text-[16px] text-text outline-none transition-all placeholder:text-muted/50 focus:border-accent/40 focus:bg-surface/55 focus:shadow-[0_0_24px_var(--color-glow)]"
               enterKeyHint="send"
               disabled={loading}
             />

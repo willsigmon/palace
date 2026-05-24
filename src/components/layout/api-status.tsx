@@ -1,9 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getHealth } from '@/lib/api'
 
 type Status = 'connected' | 'degraded' | 'disconnected' | 'checking'
+
+interface RuntimeHealthResponse {
+  readonly ok: boolean
+  readonly degraded?: boolean
+  readonly services?: {
+    readonly api?: { readonly ok: boolean }
+    readonly marlin?: { readonly ok: boolean }
+  }
+}
 
 const STATUS_CONFIG: Record<Status, { color: string; label: string }> = {
   connected: { color: 'bg-emerald-400', label: 'Connected' },
@@ -18,8 +26,23 @@ export function ApiStatus({ expanded }: { expanded: boolean }) {
   useEffect(() => {
     async function check() {
       try {
-        const health = await getHealth()
-        setStatus(health.ok ? 'connected' : 'degraded')
+        const response = await fetch('/api/runtime-health', { cache: 'no-store' })
+        if (!response.ok) {
+          setStatus('disconnected')
+          return
+        }
+
+        const health = (await response.json()) as RuntimeHealthResponse
+        const serviceStates = Object.values(health.services ?? {}).map((service) => service?.ok)
+        const anyConnected = serviceStates.some(Boolean)
+
+        if (health.ok) {
+          setStatus('connected')
+        } else if (anyConnected || health.degraded) {
+          setStatus('degraded')
+        } else {
+          setStatus('disconnected')
+        }
       } catch {
         setStatus('disconnected')
       }

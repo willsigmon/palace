@@ -170,7 +170,7 @@ function buildFallbackData(stats: StatsResponse | null): VaultData {
     total_conversations: stats?.conversations ?? 0,
     total_hours: 0,
     random_quote: null,
-    total_people: stats?.enrichment.people ?? 0,
+    total_people: stats?.enrichment?.people ?? 0,
     top_category: null,
   }
 }

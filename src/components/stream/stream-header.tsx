@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useAppStore } from '@/stores/app-store'
 import { formatNumber } from '@/lib/format'
 import type { StatsResponse } from '@/types/api'
@@ -25,18 +26,35 @@ export function StreamHeader({ stats }: StreamHeaderProps) {
 
   return (
     <header className="mb-8">
-      {/* Title + dynamic subtitle */}
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-text">Timeline</h1>
-        {stats ? (
-          <p className="mt-1.5 text-sm text-sub">
-            {formatNumber(stats.conversations)} conversations · {formatNumber(stats.memories)} memories · {formatNumber(stats.enrichment?.people ?? 0)} people
-          </p>
-        ) : (
-          <p className="mt-1.5 text-sm text-sub">
-            Your conversations, searchable and connected.
-          </p>
-        )}
+      <div className="mb-6">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-accent/70">
+          Recent context
+        </p>
+        <h1 className="text-2xl font-semibold tracking-[-0.03em] text-text">Timeline</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+          {stats ? (
+            <p className="text-sm leading-6 text-sub">
+              {formatNumber(stats.conversations)} conversations · {formatNumber(stats.memories)} memories · {formatNumber(stats.enrichment?.people ?? 0)} people
+            </p>
+          ) : (
+            <p className="text-sm leading-6 text-sub">
+              Your conversations, searchable and connected.
+            </p>
+          )}
+          <div className="hidden h-1 w-1 rounded-full bg-muted/30 sm:block" />
+          <Link
+            href="/?q=What%20changed%20in%20my%20recent%20context%3F"
+            className="rounded-full border border-accent/15 bg-accent/10 px-3 py-1.5 text-[11px] font-medium text-accent/80 transition-colors hover:border-accent/30 hover:text-accent"
+          >
+            Ask what changed
+          </Link>
+          <Link
+            href="/actions"
+            className="rounded-full border border-border/30 bg-surface/20 px-3 py-1.5 text-[11px] font-medium text-sub/70 transition-colors hover:border-accent/25 hover:text-accent"
+          >
+            Review loops
+          </Link>
+        </div>
       </div>
 
       {/* Search bar */}

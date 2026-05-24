@@ -3,13 +3,13 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-// Mobile: 5 tabs, Marlin first
+// Mobile: 5 clear actions. Exploration lives behind More.
 const MOBILE_NAV = [
-  { id: 'marlin', label: 'Marlin', href: '/', icon: 'voice' },
-  { id: 'timeline', label: 'Timeline', href: '/timeline', icon: 'stream' },
-  { id: 'people', label: 'People', href: '/people', icon: 'people' },
-  { id: 'memories', label: 'Memories', href: '/memories', icon: 'memories' },
+  { id: 'wsig', label: 'WSIG', href: '/', icon: 'voice' },
   { id: 'search', label: 'Search', href: '/search', icon: 'search' },
+  { id: 'timeline', label: 'Timeline', href: '/timeline', icon: 'stream' },
+  { id: 'actions', label: 'Actions', href: '/actions', icon: 'actions' },
+  { id: 'more', label: 'More', href: '/more', icon: 'more' },
 ] as const
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -63,6 +63,20 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M2 10c2-3 5-5 9-5 2 0 3.5.8 4.5 2l2 1.5-2 1.5c-1 1.2-2.5 2-4.5 2-4 0-7-2-9-5z" />
       <path d="M11 5c.5-1.5 1.5-2.5 2.5-3" />
       <circle cx="14" cy="9" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  actions: (
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="4" width="5" height="5" rx="1" />
+      <path d="M9 6.5h7M9 13.5h7" />
+      <path d="M4 11.5l1.5 1.5L8 10" />
+    </svg>
+  ),
+  more: (
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="5" cy="10" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="10" cy="10" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="1.4" fill="currentColor" stroke="none" />
     </svg>
   ),
 }

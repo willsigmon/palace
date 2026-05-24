@@ -45,7 +45,11 @@ export class ApiError extends Error {
 
 function buildUrl(path: string, params?: Record<string, PrimitiveParam>): string {
   const { apiBaseUrl } = getRuntimeConfig()
-  const url = new URL(resolveRuntimeUrl(apiBaseUrl, path))
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const baseUrl = typeof window === 'undefined'
+    ? resolveRuntimeUrl(apiBaseUrl, normalizedPath)
+    : new URL(`/api/wsig${normalizedPath}`, window.location.origin).toString()
+  const url = new URL(baseUrl)
 
   if (params) {
     for (const [key, value] of Object.entries(params)) {
@@ -94,12 +98,17 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     ...(method === 'GET' ? { next: { revalidate: 60 } } : {}),
   })
 
+  const proxiedStatus = response.headers.get('x-wsig-upstream-status')
+  if (proxiedStatus) {
+    const details = await parseErrorDetails(response)
+    const status = Number(proxiedStatus) || 502
+    const detailMessage = getErrorMessage(details, 'Upstream request failed')
+    throw new ApiError(status, path, `API request failed for ${path}: ${detailMessage}`, details)
+  }
+
   if (!response.ok) {
     const details = await parseErrorDetails(response)
-    const detailMessage =
-      typeof details === 'string' && details.trim() !== ''
-        ? details.trim()
-        : response.statusText || 'Request failed'
+    const detailMessage = getErrorMessage(details, response.statusText || 'Request failed')
 
     throw new ApiError(response.status, path, `API request failed for ${path}: ${detailMessage}`, details)
   }
@@ -109,6 +118,23 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   return response.json() as Promise<T>
+}
+
+function getErrorMessage(details: unknown, fallback: string): string {
+  if (typeof details === 'string' && details.trim() !== '') {
+    return details.trim()
+  }
+  if (details && typeof details === 'object') {
+    const candidate = 'error' in details
+      ? details.error
+      : 'message' in details
+        ? details.message
+        : null
+    if (typeof candidate === 'string' && candidate.trim() !== '') {
+      return candidate.trim()
+    }
+  }
+  return fallback
 }
 
 // === Core health + stats ===

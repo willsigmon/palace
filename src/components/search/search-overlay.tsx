@@ -158,7 +158,7 @@ export function SearchOverlay() {
     if (result.type === 'conversation') {
       router.push(`/conversation/${result.id}`)
     } else if (result.type === 'person') {
-      router.push(`/graph?person=${result.id}`)
+      router.push(`/people/${result.id}`)
     } else {
       router.push(`/search?q=${encodeURIComponent(result.title)}`)
     }

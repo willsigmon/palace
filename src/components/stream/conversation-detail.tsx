@@ -130,7 +130,7 @@ ${transcript.slice(0, 4000)}`,
       addToast('Re-processed with local AI', 'info')
       setTopicInfo(data.response)
     } catch {
-      addToast('Failed to re-process — is Marlin running?', 'error')
+      addToast('Failed to re-process — is WSIG voice service reachable?', 'error')
     }
     setReprocessing(false)
   }, [addToast, getSpeakerName, segments, session.id])
