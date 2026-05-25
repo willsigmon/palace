@@ -22,6 +22,12 @@ struct MoreView: View {
                     } label: {
                         Label("Insights", systemImage: "chart.bar.fill")
                     }
+
+                    NavigationLink {
+                        DisneyWorldJournalView()
+                    } label: {
+                        Label("Disney World Retrospective", systemImage: "sparkles.rectangle.stack.fill")
+                    }
                 }
 
                 Section("Marlin") {
