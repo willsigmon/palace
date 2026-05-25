@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disney World: A Cinematic Retrospective</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0F0E0E;
+      --card-bg: rgba(26, 24, 24, 0.65);
+      --border-color: rgba(255, 107, 53, 0.15);
+      --text-primary: #F3F1F1;
+      --text-secondary: #B5B0AE;
+      --accent-warm: #FF6B35;
+      --accent-pink: #F72585;
+      --glow-color: rgba(255, 107, 53, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    /* Cinematic Background Noise and Gradients */
+    .bg-gradient-1 {
+      position: fixed;
+      top: -10%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(247, 37, 133, 0.08) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: -1;
+      animation: float 20s infinite alternate;
+    }
+
+    .bg-gradient-2 {
+      position: fixed;
+      bottom: -10%;
+      right: -10%;
+      width: 60vw;
+      height: 60vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 107, 53, 0.06) 0%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+      z-index: -1;
+      animation: float 25s infinite alternate-reverse;
+    }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(5%, 5%) scale(1.1); }
+    }
+
+    header {
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .title-container {
+      max-width: 800px;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #FFF 30%, var(--accent-warm) 70%, var(--accent-pink) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(255,107,53,0.1);
+    }
+
+    .subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      font-weight: 300;
+      color: var(--text-secondary);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    .badge-container {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 3rem;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0.5rem 1rem;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .badge:hover {
+      border-color: var(--accent-warm);
+      color: var(--text-primary);
+      box-shadow: 0 0 15px var(--border-color);
+    }
+
+    /* Wearable Cassette Mockup */
+    .cassette-widget {
+      background: rgba(18, 17, 17, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 320px;
+      margin-top: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease;
+    }
+
+    .cassette-widget:hover {
+      border-color: var(--accent-pink);
+      box-shadow: 0 15px 35px rgba(247, 37, 133, 0.2);
+    }
+
+    .cassette-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      color: var(--accent-warm);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .cassette-wheels {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      padding: 1rem 0;
+    }
+
+    .wheel {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      border: 6px dashed var(--text-secondary);
+      animation: spin 4s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .cassette-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      text-align: left;
+    }
+
+    .cassette-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #FFF;
+    }
+
+    .cassette-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    /* Main Grid Layout */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+
+    /* Timeline Section */
+    .timeline {
+      position: relative;
+      padding-left: 2rem;
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 6rem;
+    }
+
+    .day-node {
+      position: relative;
+      opacity: 0;
+      transform: translateX(-40px);
+      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .day-node.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .day-node::before {
+      content: '';
+      position: absolute;
+      left: calc(-2rem - 6px);
+      top: 10px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--accent-warm);
+      border: 3px solid var(--bg-color);
+      box-shadow: 0 0 10px var(--accent-warm);
+      transition: all 0.3s ease;
+    }
+
+    .day-node:hover::before {
+      background: var(--accent-pink);
+      box-shadow: 0 0 15px var(--accent-pink);
+      transform: scale(1.3);
+    }
+
+    .day-header {
+      margin-bottom: 2rem;
+    }
+
+    .day-date {
+      font-size: 0.9rem;
+      color: var(--accent-pink);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .day-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      margin-top: 0.5rem;
+      color: #FFF;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: transform 0.4s ease, border-color 0.4s ease;
+      margin-bottom: 2rem;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 107, 53, 0.35);
+    }
+
+    .card-body {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .card-body p {
+      margin-bottom: 1rem;
+    }
+
+    .card-body strong {
+      color: var(--text-primary);
+    }
+
+    /* Mishap Tag / Section */
+    .mishap-box {
+      background: rgba(247, 37, 133, 0.04);
+      border-left: 4px solid var(--accent-pink);
+      border-radius: 0 16px 16px 0;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .mishap-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--accent-pink);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .mishap-content {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* Images */
+    .image-container {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      position: relative;
+      margin-bottom: 1.5rem;
+      cursor: zoom-in;
+    }
+
+    .image-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .image-container:hover img {
+      transform: scale(1.05);
+    }
+
+    .image-caption {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    /* Interactive Timeline Navigation */
+    .nav-timeline {
+      position: fixed;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      z-index: 100;
+    }
+
+    .nav-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .nav-dot:hover, .nav-dot.active {
+      background: var(--accent-warm);
+      box-shadow: 0 0 10px var(--accent-warm);
+      transform: scale(1.3);
+    }
+
+    .nav-label {
+      position: absolute;
+      right: 25px;
+      top: -3px;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid var(--border-color);
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: #FFF;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(10px);
+      transition: all 0.3s ease;
+    }
+
+    .nav-dot:hover .nav-label {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Scroll Indicator */
+    .scroll-down {
+      position: absolute;
+      bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      animation: pulse 2s infinite;
+      cursor: pointer;
+    }
+
+    .scroll-arrow {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, var(--text-secondary), transparent);
+      margin-top: 0.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scroll-arrow::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--accent-warm);
+      animation: scrollDown 2s infinite;
+    }
+
+    @keyframes scrollDown {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-timeline { display: none; }
+      main { padding: 2rem 1rem; }
+      .timeline { padding-left: 1.5rem; }
+      .day-node::before { left: calc(-1.5rem - 6px); }
+      .card { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-gradient-1"></div>
+  <div class="bg-gradient-2"></div>
+
+  <nav class="nav-timeline">
+    <div class="nav-dot active" onclick="scrollToSection('header')"><span class="nav-label">Title</span></div>
+    <div class="nav-dot" onclick="scrollToSection('day1')"><span class="nav-label">May 18: Arrival</span></div>
+    <div class="nav-dot" onclick="scrollToSection('day2')"><span class="nav-label">May 19: Magic Kingdom</span></div>
+    <div class="nav-dot" onclick="scrollToSection('day3')"><span class="nav-label">May 20: Rest</span></div>
+    <div class="nav-dot" onclick="scrollToSection('day4')"><span class="nav-label">May 21: EPCOT</span></div>
+    <div class="nav-dot" onclick="scrollToSection('day5')"><span class="nav-label">May 22: Flying Home</span></div>
+  </nav>
+
+  <header id="header">
+    <div class="title-container">
+      <div class="badge-container">
+        <span class="badge">Omi Active</span>
+        <span class="badge">Fieldy Synced</span>
+      </div>
+      <h1>Disney World</h1>
+      <p class="subtitle">A Cinematic Retrospective</p>
+      
+      <center>
+        <div class="cassette-widget">
+          <div class="cassette-header">
+            <span>Omi Cassette v3.0</span>
+            <span>A Side</span>
+          </div>
+          <div class="cassette-wheels">
+            <div class="wheel"></div>
+            <div class="wheel"></div>
+          </div>
+          <div class="cassette-footer">
+            <div class="cassette-title">Will's Personal Lifelog Archive</div>
+            <div class="cassette-subtitle">May 18 – 22, 2026 | 57 Enriched Tracks</div>
+          </div>
+        </div>
+      </center>
+    </div>
+
+    <div class="scroll-down" onclick="scrollToSection('day1')">
+      <span>Scroll to Retrospective</span>
+      <div class="scroll-arrow"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="timeline">
+      
+      <!-- DAY 1 -->
+      <section class="day-node" id="day1">
+        <div class="day-header">
+          <span class="day-date">Monday • May 18</span>
+          <h2 class="day-title">The Boardwalk & Room Tour</h2>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>The journey started at baggage claim 3 in Orlando International Airport, coordinating the pickup and scooter logistics. We checked into our home base: an accessible room at <strong>Disney’s All Star Music Resort</strong>.</p>
+            <p>Before unpacking, we took a sunset roll from Hollywood Studios to the Boardwalk. Tectonic wood decks, evening breezes, and watching the neon skyline light up served as our induction into park life.</p>
+          </div>
+          
+          <div class="mishap-box">
+            <div class="mishap-header">⚠️ Logistics Mishap</div>
+            <div class="mishap-content">"Unpacking the accessible suite felt like setting up a mobile command center. Chargers, battery banks, Instacart deliveries, and scooter cables took up every outlet. In the middle of it, we were sorting out dermatology and blood work dates for the following week, alongside coordinating a remote app release—the work never completely sleeps."</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DAY 2 -->
+      <section class="day-node" id="day2">
+        <div class="day-header">
+          <span class="day-date">Tuesday • May 19</span>
+          <h2 class="day-title">Magic Kingdom — Speed & Sugar</h2>
+        </div>
+        <div class="card">
+          <div class="image-container">
+            <img src="./disney_cinderella_castle_noir_1779720951958.png" alt="Cinderella Castle">
+          </div>
+          <div class="image-caption">Cinderella Castle under the glowing magenta fireworks.</div>
+          
+          <div class="card-body" style="margin-top: 2rem;">
+            <p>Main Street at park open is a dense grid of warm sugar, heavy humidity, and high ambient decibels. Rolling through the crowd, we checked off our targets with mechanical precision:</p>
+            <ul>
+              <li><strong>Peter Pan's Flight</strong> — Flying over London in the dark, classic storytelling.</li>
+              <li><strong>Pirates of the Caribbean</strong> — Sailing caverns of bromine and old wood.</li>
+              <li><strong>Carousel of Progress</strong> — A cool 20 minutes in the rotating theater listening to Walt’s classic sermon.</li>
+              <li><strong>TRON Lightcycle / Run</strong> — Launching under the massive grid of blue neon.</li>
+              <li><strong>TTA PeopleMover</strong> — Cruising the rafters of Space Mountain in the afternoon breeze.</li>
+            </ul>
+            <p>We fueled the run with two Magic Kingdom staples: <strong>corn dog nuggets</strong> and a warm <strong>Cheshire Cattail</strong>.</p>
+          </div>
+
+          <div class="mishap-box">
+            <div class="mishap-header">🌭 Funny Mishap: The 4:20 PM Scramble</div>
+            <div class="mishap-content">"At 4:20 PM, a minor panic set in. We needed to catch the Disney bus by 4:30. Running on 'vacation time,' I tried to joke about routines and schedule independence. My partner pushes back: the bus schedule waits for no one. In the middle of our frantic, high-speed scooter sprint, my shorts got covered in mystery syrup, forcing a chaotic, emergency wet-wipe clean-up on the move."</div>
+          </div>
+          
+          <div class="mishap-box" style="margin-top: 1rem; background: rgba(255, 107, 53, 0.03); border-color: var(--accent-warm);">
+            <div class="mishap-header" style="color: var(--accent-warm);">🛶 Funny Moment: Jungle Cruise Skipper</div>
+            <div class="mishap-content">"During our boarding of the Jungle Cruise, our skipper delivered a barrage of rapid-fire dad jokes. We passed a family of deer: 'There are the deer... Oh look, they're starting a family... Dear, dear, dear!' We also reacted to an injured rabbit near Big Thunder which Josie gently saved from the crowd."</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DAY 3 -->
+      <section class="day-node" id="day3">
+        <div class="day-header">
+          <span class="day-date">Wednesday • May 20</span>
+          <h2 class="day-title">The Silent Off-Day</h2>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p>A quiet mid-week break. No wearable audio logs, no timelines, no structured plans. Just pool water, accessible room comfort, and a complete recharge of both human and mechanical batteries. Rest is part of the engineering.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- DAY 4 -->
+      <section class="day-node" id="day4">
+        <div class="day-header">
+          <span class="day-date">Thursday • May 21</span>
+          <h2 class="day-title">EPCOT — The Cosmic Rewind</h2>
+        </div>
+        <div class="card">
+          <div class="image-container">
+            <img src="./disney_epcot_sphere_noir_1779720968337.png" alt="Spaceship Earth">
+          </div>
+          <div class="image-caption">Spaceship Earth geosphere illuminated with geometric precision.</div>
+          
+          <div class="card-body" style="margin-top: 2rem;">
+            <p>EPCOT always feels like an optimistic editorial on human potential. Our primary target: <strong>Guardians of the Galaxy: Cosmic Rewind</strong>.</p>
+            <p>In the weeks leading up to this, back at the house during Mother's Day dinner, I admitted I was genuinely nervous—if not flat-out scared—about this ride. The reverse launch and the free-spinning coaches are a serious physical challenge. But stepping into the Wonders of Xandar pavilion and boarding the Starjumper, the apprehension vanished. </p>
+            <p>The teleportation pre-show went sideways when the cosmic generator was reported 'stolen,' and then came the launch: a blur of kinetic acceleration, spinning backward through the cosmos under the neon-pink gaze of a giant celestial while classic pop echoed in our ears. I handled the forces perfectly. It was an absolute triumph.</p>
+            <p>Afterward, we hit <strong>Mission: SPACE (Orange Mission)</strong>, pulling high G-forces in the centrifuge, before taking a relaxing walk through the interactive Moana <strong>Journey of Water</strong> and taking Remy's trackless sprint through the kitchen.</p>
+          </div>
+
+          <div class="mishap-box">
+            <div class="mishap-header">🌀 Mishap: Mission Space vs. Guardians</div>
+            <div class="mishap-content">"After walking off Cosmic Rewind feeling like a champ, we decided to tackle the 'Orange Mission' (Centrifuge training) at Mission: SPACE. We got in line feeling overconfident. As the G-forces hit during launch, we realized just how different continuous centrifuge speed is compared to roller-coaster adrenaline. We made it through safely, but it was a sobering reminder of centrifuge gravity!"</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DAY 5 -->
+      <section class="day-node" id="day5">
+        <div class="day-header">
+          <span class="day-date">Friday • May 22</span>
+          <h2 class="day-title">The Retrospective Flight</h2>
+        </div>
+        <div class="card">
+          <div class="image-container">
+            <img src="./disney_galaxy_edge_noir_1779720983643.png" alt="Millennium Falcon">
+          </div>
+          <div class="image-caption">The Millennium Falcon resting in the docking bay of Galaxy's Edge.</div>
+          
+          <div class="card-body" style="margin-top: 2rem;">
+            <p>We checked out of All Star Music, packed the checked bag, loaded the scooter, and took a rideshare to MCO. Boarding our 1:05 PM <strong>Breeze Airways</strong> flight back to RDU, we settled in.</p>
+            <p>As the plane climbed over the Florida coastline, we did a retrospective on our absolute favorite rides of the entire trip. The verdict was unanimous:</p>
+            <ol style="margin-left: 2rem; margin-top: 1rem;">
+              <li><strong>Guardians of the Galaxy: Cosmic Rewind</strong> (The nerves were real, but the payoff was legendary)</li>
+              <li><strong>TRON Lightcycle / Run</strong> (Pure, uncluttered kinetic speed)</li>
+              <li><strong>Star Tours</strong> (A timeless, simulator-based classic)</li>
+            </ol>
+            <p style="margin-top: 1rem;">We touched down in Raleigh-Durham in the late afternoon. Trip complete. Synced and recorded.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    // Smooth Scrolling
+    function scrollToSection(id) {
+      document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Intersection Observer for Timeline Fade-in
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          
+          // Update active dot in fixed nav
+          const sectionId = entry.target.id;
+          document.querySelectorAll('.nav-dot').forEach(dot => {
+            dot.classList.remove('active');
+          });
+          const activeDot = document.querySelector(`.nav-dot[onclick*="${sectionId}"]`);
+          if (activeDot) activeDot.classList.add('active');
+        }
+      });
+    }, {
+      threshold: 0.15
+    });
+
+    document.querySelectorAll('.day-node').forEach(node => {
+      observer.observe(node);
+    });
+  </script>
+</body>
+</html>
